@@ -26,6 +26,12 @@ keep raw facts about the outside world here.
 - Geofabrik Bangladesh PBF — https://download.geofabrik.de/asia/bangladesh-latest.osm.pbf
   - Verified reachable; redirects to a dated snapshot (e.g. `bangladesh-260919.osm.pbf`).
 
+**OSM API `map` endpoint (small bboxes — used for building footprints):**
+
+- `https://api.openstreetmap.org/api/0.6/map?bbox=west,south,east,north`
+- Reliable for local areas; limited to ≤0.25 deg² and ~50k nodes per call.
+- Used by `scripts/fetch-buildings.ts` (tiled 0.005° over the spawn district).
+
 **Overpass API (ad-hoc queries only — NOT in the build path):**
 
 - Endpoint — https://overpass-api.de/api/interpreter
@@ -126,6 +132,7 @@ Central Railway Building, Reboti Mohan Statue, Bijoy Uddan monument.
 | Terrain heightmap | `public/world/chattogram/terrain/heightmap.f32` | Copernicus DEM GLO-30 | float32le, 549×668 @ 30 m, 1.5 MB |
 | Terrain metadata | `public/world/chattogram/terrain/metadata.json` | generated | bounds, size, elevation range, attribution |
 | Roads | `public/world/chattogram/roads/roads.json` | OSM via Overpass | 913 major ways, already projected to local meters |
+| Buildings | `public/world/chattogram/buildings/buildings.json` | OSM API `map` | 6,604 footprints (spawn district), 38 named, heights + type |
 | Avatar | `public/models/character.glb` | Blender | joint-node hierarchy, ~309 KB |
 
 Generator scripts (see `package.json`): `world:dem`, `world:roads`.

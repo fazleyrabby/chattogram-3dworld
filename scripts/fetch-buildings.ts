@@ -1,11 +1,11 @@
 /**
- * Extracts building footprints from OSM for a central Chittagong area and writes
- * them projected into local world coordinates with estimated heights (spec §12,
- * §13, §50).
+ * Extracts building footprints from OSM for the spawn district and writes them
+ * projected into local world coordinates, with estimated heights, a type, and a
+ * name for authentic/named buildings (spec §12–14, §16, §50).
  *
- * Buildings are fetched in small sub-tiles because a single Overpass query over
- * the city times out. Full-city coverage is a later milestone (chunking + LOD);
- * this MVP covers the dense centre.
+ * Data source: the OSM API `map` endpoint, tiled over small bboxes. This is
+ * reliable for local areas; the Geofabrik PBF is impractical to download here
+ * and public Overpass cannot serve building geometry for the city.
  *
  * Output: public/world/chattogram/buildings/buildings.json
  * Run:    npm run world:buildings
@@ -13,15 +13,18 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { XMLParser } from "fast-xml-parser";
 import { WORLD_CONFIG } from "../src/config/WorldConfig";
-import { overpass, sleep, type OverpassElement } from "./lib/osm";
+import { sleep } from "./lib/osm";
 
 const METERS_PER_DEGREE_LAT = 111_320;
 const LEVEL_HEIGHT = 3.0;
+const API = "https://api.openstreetmap.org/api/0.6/map";
+const USER_AGENT = "chattogram-3dworld/0.1 (world-generator)";
 
-/** Central city sub-area for the first buildings pass. */
-const BUILDING_BOUNDS = { south: 22.335, west: 91.805, north: 22.385, east: 91.855 };
-const TILE_DEG = 0.025;
+/** Spawn district around Cheragi Pahar (WorldConfig.spawn). */
+const DISTRICT = { south: 22.3365, west: 91.8265, north: 22.3515, east: 91.8415 };
+const TILE_DEG = 0.005;
 
 const TYPE_DEFAULTS: Record<string, number> = {
   residential: 9,
@@ -31,19 +34,29 @@ const TYPE_DEFAULTS: Record<string, number> = {
   school: 9,
   university: 12,
   hospital: 18,
-  religious: 10,
+  religious: 12,
   government: 14,
   warehouse: 9,
   hotel: 26,
   stadium: 22,
   unknown: 7,
 };
-
 const KNOWN_TYPES = new Set(Object.keys(TYPE_DEFAULTS));
 
+interface OsmNode {
+  id: string;
+  lat: number;
+  lon: number;
+}
+interface OsmWay {
+  id: string;
+  refs: string[];
+  tags: Record<string, string>;
+}
 interface Building {
   id: string;
   type: string;
+  name?: string;
   height: number;
   ring: Array<[number, number]>;
 }
@@ -56,29 +69,25 @@ function classify(tags: Record<string, string>): string {
   if (tags.amenity === "school" || tags.amenity === "kindergarten") return "school";
   if (tags.amenity === "university" || tags.amenity === "college") return "university";
   if (tags.office || b === "commercial") return "commercial";
-  if (["house", "apartments", "detached", "terrace", "yes", "dormitory", "semidetached_house"].includes(b)) {
-    return "residential";
-  }
+  if (["house", "apartments", "detached", "terrace", "yes", "dormitory"].includes(b)) return "residential";
   if (b === "industrial" || tags.landuse === "industrial") return "industrial";
   return "unknown";
 }
 
-function parseHeight(value: string | undefined): number | undefined {
+function parseNumber(value: string | undefined): number | undefined {
   if (!value) return undefined;
   const match = value.match(/-?\d+(\.\d+)?/);
   if (!match) return undefined;
   const n = Number.parseFloat(match[0]);
-  return Number.isFinite(n) && n > 0 && n < 400 ? n : undefined;
+  return Number.isFinite(n) ? n : undefined;
 }
 
 function estimateHeight(tags: Record<string, string>, type: string): number {
-  const explicit = parseHeight(tags.height) ?? parseHeight(tags["building:height"]);
-  if (explicit) return explicit;
-
-  const levels = parseHeight(tags["building:levels"]);
-  if (levels) return levels * LEVEL_HEIGHT;
-
-  return TYPE_DEFAULTS[type] ?? TYPE_DEFAULTS.unknown ?? 7;
+  const explicit = parseNumber(tags.height) ?? parseNumber(tags["building:height"]);
+  if (explicit && explicit > 0 && explicit < 400) return explicit;
+  const levels = parseNumber(tags["building:levels"]);
+  if (levels && levels > 0 && levels < 100) return levels * LEVEL_HEIGHT;
+  return TYPE_DEFAULTS[type] ?? 7;
 }
 
 function ringArea(ring: Array<[number, number]>): number {
@@ -91,6 +100,36 @@ function ringArea(ring: Array<[number, number]>): number {
   return Math.abs(area / 2);
 }
 
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  isArray: (name) => name === "node" || name === "way" || name === "nd" || name === "tag",
+});
+
+/** Fetch and parse one bbox via the OSM API. */
+async function fetchTile(s: number, w: number, n: number, e: number): Promise<{ nodes: OsmNode[]; ways: OsmWay[] }> {
+  const url = `${API}?bbox=${w},${s},${e},${n}`;
+  const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const xml = await response.text();
+  const doc = parser.parse(xml) as { osm?: { node?: unknown[]; way?: unknown[] } };
+  const osm = doc.osm ?? {};
+
+  const nodes: OsmNode[] = (osm.node ?? []).map((raw) => {
+    const o = raw as { "@_id": string; "@_lat": string; "@_lon": string };
+    return { id: o["@_id"], lat: Number(o["@_lat"]), lon: Number(o["@_lon"]) };
+  });
+
+  const ways: OsmWay[] = (osm.way ?? []).map((raw) => {
+    const o = raw as { "@_id": string; nd?: Array<{ "@_ref": string }>; tag?: Array<{ "@_k": string; "@_v": string }> };
+    const tags: Record<string, string> = {};
+    for (const t of o.tag ?? []) tags[t["@_k"]] = t["@_v"];
+    return { id: o["@_id"], refs: (o.nd ?? []).map((nd) => nd["@_ref"]), tags };
+  });
+
+  return { nodes, ways };
+}
+
 async function main(): Promise<void> {
   const { origin } = WORLD_CONFIG;
   const lonScale = METERS_PER_DEGREE_LAT * Math.cos((origin.latitude * Math.PI) / 180);
@@ -100,28 +139,44 @@ async function main(): Promise<void> {
   ];
 
   const buildings = new Map<string, Building>();
+  const nodes = new Map<string, [number, number]>();
   let tiles = 0;
   let skipped = 0;
 
-  for (let lat = BUILDING_BOUNDS.south; lat < BUILDING_BOUNDS.north; lat += TILE_DEG) {
-    for (let lon = BUILDING_BOUNDS.west; lon < BUILDING_BOUNDS.east; lon += TILE_DEG) {
-      const s = lat;
-      const w = lon;
-      const n = Math.min(lat + TILE_DEG, BUILDING_BOUNDS.north);
-      const e = Math.min(lon + TILE_DEG, BUILDING_BOUNDS.east);
-      const query = `[out:json][timeout:120];way["building"](${s},${w},${n},${e});out geom;`;
+  for (let south = DISTRICT.south; south < DISTRICT.north; south += TILE_DEG) {
+    for (let west = DISTRICT.west; west < DISTRICT.east; west += TILE_DEG) {
+      const n = Math.min(south + TILE_DEG, DISTRICT.north);
+      const e = Math.min(west + TILE_DEG, DISTRICT.east);
 
-      process.stdout.write(`[buildings] tile ${++tiles} (${s.toFixed(3)},${w.toFixed(3)}) ... `);
-      const elements = await overpass(query);
+      process.stdout.write(`[buildings] tile ${++tiles} ... `);
+      let tile;
+      try {
+        tile = await fetchTile(south, west, n, e);
+      } catch (error) {
+        console.log(`failed (${String(error)})`);
+        await sleep(2000);
+        continue;
+      }
+
+      for (const node of tile.nodes) nodes.set(node.id, toLocal(node.lat, node.lon));
+
       let added = 0;
-
-      for (const element of elements) {
-        if (element.type !== "way" || !element.geometry) continue;
-        const id = `way/${element.id}`;
+      for (const way of tile.ways) {
+        if (!way.tags.building) continue;
+        const id = `way/${way.id}`;
         if (buildings.has(id)) continue;
 
-        const ring = element.geometry.map((p) => toLocal(p.lat, p.lon));
-        if (ring.length < 4) {
+        const ring: Array<[number, number]> = [];
+        let ok = true;
+        for (const ref of way.refs) {
+          const coord = nodes.get(ref);
+          if (!coord) {
+            ok = false;
+            break;
+          }
+          ring.push(coord);
+        }
+        if (!ok || ring.length < 4) {
           skipped++;
           continue;
         }
@@ -130,18 +185,26 @@ async function main(): Promise<void> {
           continue;
         }
 
-        const tags = element.tags ?? {};
-        const type = classify(tags);
-        buildings.set(id, { id, type, height: round(estimateHeight(tags, type)), ring });
+        const type = classify(way.tags);
+        const building: Building = {
+          id,
+          type,
+          height: round(estimateHeight(way.tags, type)),
+          ring,
+        };
+        const name = way.tags.name ?? way.tags["name:en"];
+        if (name) building.name = name;
+        buildings.set(id, building);
         added++;
       }
-      console.log(`${elements.length} ways, +${added}`);
 
-      await sleep(1500);
+      console.log(`${tile.nodes.length} nodes, ${tile.ways.length} ways, +${added}`);
+      await sleep(800);
     }
   }
 
   const list = [...buildings.values()];
+  const named = list.filter((b) => b.name);
   const byType: Record<string, number> = {};
   for (const b of list) byType[b.type] = (byType[b.type] ?? 0) + 1;
 
@@ -153,7 +216,7 @@ async function main(): Promise<void> {
       {
         attribution: "Map data © OpenStreetMap contributors (ODbL)",
         generatedAt: new Date().toISOString(),
-        bounds: BUILDING_BOUNDS,
+        bounds: DISTRICT,
         origin,
         buildings: list,
       },
@@ -162,8 +225,9 @@ async function main(): Promise<void> {
     )}\n`,
   );
 
-  console.log(`[buildings] ${list.length} buildings (${skipped} skipped)`);
+  console.log(`[buildings] ${list.length} buildings (${skipped} skipped), ${named.length} named`);
   console.log("[buildings] by type:", byType);
+  console.log("[buildings] named:", named.map((b) => b.name).slice(0, 30));
   console.log(`[buildings] wrote ${resolve(dir, "buildings.json")}`);
 }
 

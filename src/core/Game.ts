@@ -3,6 +3,7 @@ import { Renderer } from "@/core/Renderer";
 import { SceneManager } from "@/core/SceneManager";
 import { Terrain } from "@/world/Terrain";
 import { Roads } from "@/world/Roads";
+import { Buildings } from "@/world/Buildings";
 import { TerrainHeightfield } from "@/world/TerrainHeightfield";
 import { Lighting } from "@/world/Lighting";
 import { Player } from "@/player/Player";
@@ -12,6 +13,7 @@ import { AudioManager } from "@/audio/AudioManager";
 import { Input } from "@/player/Input";
 import { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
 import { HUD } from "@/ui/HUD";
+import { WorldLabels } from "@/ui/WorldLabels";
 import { WORLD_CONFIG } from "@/config/WorldConfig";
 import { geoToLocal } from "@/geography/Projection";
 import { createHeightProvider, type HeightProvider } from "@/geography/WorldHeight";
@@ -37,6 +39,7 @@ export class Game {
   private controller: PlayerController;
   private getHeight: HeightProvider = createHeightProvider();
   private heightfield?: TerrainHeightfield;
+  private labels?: WorldLabels;
   private readonly audio = new AudioManager();
   private running = false;
 
@@ -80,9 +83,11 @@ export class Game {
 
     const terrain = new Terrain(this.heightfield);
     const roads = await Roads.load(this.getHeight);
+    const buildings = await Buildings.load(this.getHeight);
+    this.labels = new WorldLabels(buildings.named, this.getHeight);
     await this.loadAvatar();
 
-    this.sceneManager.scene.add(terrain.object, roads.object);
+    this.sceneManager.scene.add(terrain.object, roads.object, buildings.object);
 
     this.spawnPlayer();
   }
@@ -136,6 +141,7 @@ export class Game {
     this.player.getCameraTarget(this.cameraTarget);
     this.cameraRig.update(delta, this.cameraTarget);
 
+    this.labels?.update(this.cameraRig.camera);
     this.updateSun();
     this.renderer.instance.render(
       this.sceneManager.scene,
