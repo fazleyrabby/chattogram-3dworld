@@ -28,6 +28,7 @@ export class Player {
 
   private avatar: PlayerAvatar;
   private walkPhase = 0;
+  private ridePhase = 0;
 
   constructor() {
     this.position = new THREE.Vector3();
@@ -76,6 +77,12 @@ export class Player {
       this.walkPhase = 0;
       this.avatar.animate(0, 0, airborne);
     }
+  }
+
+  /** Advances the seated riding pose while mounted. */
+  updateRiding(delta: number): void {
+    this.ridePhase += delta * 5;
+    this.avatar.animateRiding(this.ridePhase);
   }
 
   /** Camera follow target (chest height). */

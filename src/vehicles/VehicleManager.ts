@@ -71,7 +71,9 @@ export class VehicleManager {
     const vehicle = this.active;
     if (!vehicle) return;
     const p = vehicle.object.position;
-    const seatHeight = vehicle.kind === "car" ? 0.5 : 0.3;
+    // Place the hips on the seat: avatar hip is 0.92 up from its feet origin.
+    const hipHeight = vehicle.kind === "car" ? 0.55 : 0.84;
+    const seatHeight = hipHeight - 0.92;
     player.position.set(p.x, p.y + seatHeight, p.z);
     player.facing = vehicle.heading;
     player.sync();

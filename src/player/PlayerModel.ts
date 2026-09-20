@@ -129,7 +129,19 @@ export class PlayerModel implements PlayerAvatar {
    * @param intensity 0 = idle, 1 = full run
    * @param airborne  true while jumping/falling
    */
+  /** Seated riding pose (legs forward onto the pedals, arms to the bars). */
+  animateRiding(phase: number): void {
+    const pedal = Math.sin(phase);
+    this.leftLeg.rotation.x = -1.0 + pedal * 0.4;
+    this.rightLeg.rotation.x = -1.0 - pedal * 0.4;
+    this.leftArm.rotation.x = -0.72;
+    this.rightArm.rotation.x = -0.72;
+    this.upper.rotation.x = 0.14;
+    this.upper.position.y = 0.02;
+  }
+
   animate(phase: number, intensity: number, airborne: boolean): void {
+    this.upper.rotation.x = 0;
     if (airborne) {
       this.leftLeg.rotation.x = 0.35;
       this.rightLeg.rotation.x = -0.25;

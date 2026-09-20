@@ -13,4 +13,7 @@ export interface PlayerAvatar {
    * @param airborne  true while jumping/falling
    */
   animate(phase: number, intensity: number, airborne: boolean): void;
+
+  /** Seated riding pose with pedalling. `phase` drives the pedal cycle. */
+  animateRiding(phase: number): void;
 }

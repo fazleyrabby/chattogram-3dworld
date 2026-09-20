@@ -148,6 +148,7 @@ export class Game {
     if (mounted) {
       this.vehicles?.drive(delta, this.input);
       this.vehicles?.syncRider(this.player);
+      this.player.updateRiding(delta);
       // Camera trails the vehicle so W reads as forward.
       this.cameraRig.yaw = mounted.heading + Math.PI;
       if (!this.vehicles?.getCameraTarget(this.cameraTarget)) {
