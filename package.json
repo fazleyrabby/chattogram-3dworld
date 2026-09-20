@@ -1,0 +1,22 @@
+{
+  "name": "chattogram-3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser-based 3D open-world exploration game built on real Chattogram geography.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "@types/three": "^0.180.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.0"
+  }
+}

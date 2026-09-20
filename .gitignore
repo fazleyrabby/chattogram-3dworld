@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.local
+
+# Private design source of truth — kept locally, not published
+spec.md
+
+# Playwright MCP scratch
+.playwright-mcp/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# World data: raw extracts are large and re-downloadable
+# Generated browser assets are committed intentionally (see docs/decisions.md).
+data/raw/
+*.osm.pbf
