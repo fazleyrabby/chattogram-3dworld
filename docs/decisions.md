@@ -185,6 +185,32 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0014 — City life is instanced ambience, not simulation
+
+**Status:** Accepted
+
+**Decision**
+
+Roadside props, pedestrians and traffic are **instanced ambience**, not AI:
+utility poles + sagging cables and street trees (`StreetProps`, InstancedMesh),
+~90 pedestrians walking road sidewalks (`Pedestrians`), and ~50 cars / CNG
+auto-rickshaws / cycle rickshaws looping along the major roads (`Traffic`) — each
+vehicle type one InstancedMesh with per-instance colour. City sound is
+synthesized in `AudioManager` (traffic hum + random horns/birds, day/night
+scaled).
+
+**Rationale**
+
+Spec §41–43, §57 and §23 want a lived-in city without simulation cost. Path
+following + instancing gives the crowd feel at 60 FPS; skeletal pedestrians and
+real traffic AI are out of scope.
+
+**Notes**
+
+Stylised/cartoonish per the owner's direction — detail without realism.
+
+---
+
 ## ADR-0013 — Named buildings get a procedural detail pass
 
 **Status:** Accepted

@@ -5,6 +5,9 @@ import { Terrain } from "@/world/Terrain";
 import { Roads } from "@/world/Roads";
 import { Buildings } from "@/world/Buildings";
 import { LandmarkDetails } from "@/world/LandmarkDetails";
+import { StreetProps } from "@/world/StreetProps";
+import { Pedestrians } from "@/world/Pedestrians";
+import { Traffic } from "@/world/Traffic";
 import { TerrainHeightfield } from "@/world/TerrainHeightfield";
 import { Lighting } from "@/world/Lighting";
 import { Player } from "@/player/Player";
@@ -54,6 +57,8 @@ export class Game {
   private heightfield?: TerrainHeightfield;
   private labels?: WorldLabels;
   private minimap?: Minimap;
+  private pedestrians?: Pedestrians;
+  private traffic?: Traffic;
   private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
   private readonly audio = new AudioManager();
@@ -87,6 +92,7 @@ export class Game {
   /** Browsers require a user gesture before audio can start. */
   private onFirstGesture = (): void => {
     this.audio.resume();
+    this.audio.startAmbience();
   };
 
   /** Loads world assets and sets up the player at the configured spawn. */
@@ -108,7 +114,15 @@ export class Game {
       buildings.named,
       this.getHeight,
     );
-    this.sceneManager.scene.add(landmarkDetails.object);
+    const streetProps = new StreetProps(roads.roads, this.getHeight);
+    this.pedestrians = new Pedestrians(roads.roads, this.getHeight);
+    this.traffic = new Traffic(roads.roads, this.getHeight);
+    this.sceneManager.scene.add(
+      landmarkDetails.object,
+      streetProps.object,
+      this.pedestrians.object,
+      this.traffic.object,
+    );
 
     const landmarkPanel = new LandmarkPanel(document.body);
     this.landmarks = new LandmarkManager(buildings.named, landmarkPanel, this.hud);
@@ -216,6 +230,9 @@ export class Game {
 
     const delta = Math.min(this.clock.getDelta(), 0.05);
 
+    this.pedestrians?.update(delta);
+    this.traffic?.update(delta, this.timeOfDay.isNight);
+
     this.cameraRig.handleInput(this.input);
     this.handleVehicleInput();
 
@@ -249,6 +266,7 @@ export class Game {
     );
     this.sceneManager.setSky(this.timeOfDay.skyColor);
     this.hud.setClock(this.timeOfDay.label);
+    this.audio.updateAmbience(delta, this.timeOfDay.isNight);
     this.updateSun(this.timeOfDay.getLightDirection());
     this.renderer.instance.render(
       this.sceneManager.scene,

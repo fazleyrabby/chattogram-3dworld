@@ -162,6 +162,27 @@ Generator scripts (see `package.json`): `world:dem`, `world:roads`.
   Pixabay Audio, BBC Sound Effects (non-commercial terms).
 - WebAudio API — https://developer.mozilla.org/docs/Web/API/Web_Audio_API
 
+## Comparable projects (inspiration)
+
+### Jalan KL — https://jalankl.themasterofnone.xyz
+
+A 3D Kuala Lumpur "learn the city by playing" game (single-player, stylized,
+Blender models). Same core thesis as this project. Features worth adopting:
+
+- **Quests / delivery routes** — e.g. "The Kopi Run 0/3" with objective markers.
+- **Talk to neighbours (E)** — NPC dialogue, not just landmarks.
+- **History Notebook** — collects landmarks + stories (0/26), with memory
+  questions; ties to a discovery log / completion count.
+- **Landmark postcards** with Overview / History / Visit / Sources tabs and
+  real "get directions" links.
+- **Visitor map**: neighbourhoods, tap a pin to teleport to a landmark entrance,
+  2D map / 3D globe toggle, "locate me".
+- **Enter any nearby vehicle (F)** — including traffic — with lane assist.
+- **Alternate visual modes** (Doodle mode, colour unlocks) — playful, shareable.
+- **Settings**: graphics presets, audio buses (master/ambience/effects/interface),
+  controls, accessibility (motion, large text, high contrast).
+- **Onboarding** carousel and a landing page; CC0 credits page.
+
 ## Repository
 
 - GitHub — https://github.com/fazleyrabby/chattogram-3dworld

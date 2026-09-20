@@ -13,6 +13,8 @@ export class AudioManager {
   private master?: GainNode;
   private noise?: AudioBuffer;
   private muted = false;
+  private humGain?: GainNode;
+  private ambienceTimer = 1.5;
 
   /** Creates/resumes the audio context. Call from a user gesture. */
   resume(): void {
@@ -44,6 +46,95 @@ export class AudioManager {
   toggleMute(): boolean {
     this.setMuted(!this.muted);
     return this.muted;
+  }
+
+  /**
+   * Starts the continuous city ambience (spec §57): a low traffic hum plus
+   * randomly scheduled horns and bird chirps. Safe to call repeatedly.
+   */
+  startAmbience(): void {
+    const ctx = this.ctx;
+    const master = this.master;
+    const noise = this.noise;
+    if (!ctx || !master || !noise || this.humGain) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = noise;
+    source.loop = true;
+
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = "lowpass";
+    lowpass.frequency.value = 320;
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.05;
+
+    source.connect(lowpass);
+    lowpass.connect(gain);
+    gain.connect(master);
+    source.start();
+
+    this.humGain = gain;
+  }
+
+  /** Drives ambience events; call each frame. `isNight` scales the hum down. */
+  updateAmbience(delta: number, isNight: boolean): void {
+    if (!this.ctx || !this.humGain || this.muted) return;
+    this.humGain.gain.setTargetAtTime(isNight ? 0.028 : 0.06, this.ctx.currentTime, 0.5);
+
+    this.ambienceTimer -= delta;
+    if (this.ambienceTimer > 0) return;
+    this.ambienceTimer = (isNight ? 2.5 : 1.2) + Math.random() * (isNight ? 4 : 3);
+
+    const roll = Math.random();
+    if (!isNight && roll < 0.45) this.bird();
+    else if (roll < 0.8) this.horn();
+    else this.bird();
+  }
+
+  /** A short two-tone horn. */
+  horn(): void {
+    const ctx = this.ctx;
+    const master = this.master;
+    if (!ctx || !master || this.muted) return;
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+    gain.connect(master);
+
+    for (const freq of [392, 466]) {
+      const osc = ctx.createOscillator();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    }
+  }
+
+  /** A quick bird chirp. */
+  bird(): void {
+    const ctx = this.ctx;
+    const master = this.master;
+    if (!ctx || !master || this.muted) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    const base = 1800 + Math.random() * 700;
+    osc.frequency.setValueAtTime(base, now);
+    osc.frequency.exponentialRampToValueAtTime(base * 1.5, now + 0.07);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.04, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(now);
+    osc.stop(now + 0.14);
   }
 
   /**

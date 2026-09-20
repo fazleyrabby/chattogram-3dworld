@@ -36,6 +36,10 @@
 | Minimap (§55, Canvas2D, names) | done |
 | Vehicles (summon car/bicycle, ride) | done |
 | Day/night cycle | done |
+| Street props (poles, wires, trees) | done |
+| Pedestrians (instanced) | done |
+| Traffic (cars / CNG / rickshaws) | done |
+| City ambience audio (hum, horns, birds) | done |
 | Device geolocation spawn + tracking | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |
