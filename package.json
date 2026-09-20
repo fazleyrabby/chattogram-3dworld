@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "world:dem": "tsx scripts/fetch-dem.ts",
-    "world:roads": "tsx scripts/fetch-roads.ts"
+    "world:roads": "tsx scripts/fetch-roads.ts",
+    "world:buildings": "tsx scripts/fetch-buildings.ts"
   },
   "dependencies": {
     "three": "^0.180.0"

@@ -23,6 +23,9 @@ export class Player {
   onGround = true;
   facing = 0;
 
+  /** Called once per footfall while grounded and moving (intensity 0..1). */
+  onFootstep?: (intensity: number) => void;
+
   private avatar: PlayerAvatar;
   private walkPhase = 0;
 
@@ -58,8 +61,17 @@ export class Player {
     const airborne = !this.onGround;
 
     if (moving) {
+      const previousPhase = this.walkPhase;
       this.walkPhase += delta * WALK_PHASE_RATE * speed;
       this.avatar.animate(this.walkPhase, intensity, airborne);
+
+      // Each PI of phase is one footfall.
+      if (
+        this.onGround &&
+        Math.floor(previousPhase / Math.PI) !== Math.floor(this.walkPhase / Math.PI)
+      ) {
+        this.onFootstep?.(intensity);
+      }
     } else {
       this.walkPhase = 0;
       this.avatar.animate(0, 0, airborne);

@@ -26,7 +26,9 @@
 | Roads pipeline (OSM major roads) | done |
 | Avatar authored in Blender (GLB) | done |
 | Water / coastline (OSM polygons) | pending |
-| Buildings (OSM footprints + LOD) | pending |
+| Buildings (OSM footprints + LOD) | pending — pipeline written, fetch hung |
+| Footstep audio (synthesized) | done |
+| Ambient audio (city/birds/traffic) | pending |
 
 ## Legend
 

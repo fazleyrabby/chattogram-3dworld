@@ -182,3 +182,28 @@ stylized (not photoreal) target.
 - Fully rigged armature + baked animation clips — unnecessary for M2/M3; revisit
   if richer animation is needed.
 - Third-party rigged avatar (Mixamo) — deferred.
+
+---
+
+## ADR-0009 — Audio via a single WebAudio bus
+
+**Status:** Accepted
+
+**Decision**
+
+All sound routes through `AudioManager` (one `AudioContext` + master gain).
+Footsteps are **synthesized** (filtered noise burst with an envelope) — no asset
+files yet. The context is created/resumed on the first user gesture (browser
+autoplay policy). A mute/toggle API exists.
+
+**Rationale**
+
+A single bus keeps future layers — city ambience, birds, traffic, environmental
+loops (spec §57) — consistent and easy to mix. Synthesized footsteps avoid asset
+licensing and load cost for the first audio pass; sample-based footsteps can be
+added later behind the same API.
+
+**Alternatives considered**
+
+- HTMLAudio/asset files now — licensing + load overhead for little gain yet.
+- Third-party audio engine — unnecessary for this scope.

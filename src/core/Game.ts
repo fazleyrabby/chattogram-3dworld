@@ -8,6 +8,7 @@ import { Lighting } from "@/world/Lighting";
 import { Player } from "@/player/Player";
 import { PlayerController } from "@/player/PlayerController";
 import { GltfAvatar } from "@/player/GltfAvatar";
+import { AudioManager } from "@/audio/AudioManager";
 import { Input } from "@/player/Input";
 import { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
 import { HUD } from "@/ui/HUD";
@@ -36,6 +37,7 @@ export class Game {
   private controller: PlayerController;
   private getHeight: HeightProvider = createHeightProvider();
   private heightfield?: TerrainHeightfield;
+  private readonly audio = new AudioManager();
   private running = false;
 
   constructor(canvas: HTMLCanvasElement, hudRoot: HTMLElement) {
@@ -50,11 +52,20 @@ export class Game {
     );
     this.hud = new HUD(hudRoot);
 
+    this.player.onFootstep = (intensity) => this.audio.footstep(intensity);
+    window.addEventListener("pointerdown", this.onFirstGesture, { once: true });
+    window.addEventListener("keydown", this.onFirstGesture, { once: true });
+
     this.sceneManager.scene.add(this.lighting.object, this.player.object);
 
     window.addEventListener("resize", this.onResize);
     this.onResize();
   }
+
+  /** Browsers require a user gesture before audio can start. */
+  private onFirstGesture = (): void => {
+    this.audio.resume();
+  };
 
   /** Loads world assets and sets up the player at the configured spawn. */
   async load(): Promise<void> {

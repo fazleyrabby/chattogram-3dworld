@@ -141,6 +141,14 @@ Generator scripts (see `package.json`): `world:dem`, `world:roads`.
   `JointLegL`, `JointLegR`. Animated in `src/player/GltfAvatar.ts`.
 - Blender MCP — `127.0.0.1:9876` (Blender 5.2.1 LTS).
 
+## Audio
+
+- Footsteps — synthesized in `src/audio/AudioManager.ts` (filtered noise + envelope).
+- Planned layers (spec §57): city ambience, birds, traffic, environmental loops.
+- Candidate free sources (verify license): Freesound (CC0/CC-BY), Mixkit,
+  Pixabay Audio, BBC Sound Effects (non-commercial terms).
+- WebAudio API — https://developer.mozilla.org/docs/Web/API/Web_Audio_API
+
 ## Repository
 
 - GitHub — https://github.com/fazleyrabby/chattogram-3dworld
