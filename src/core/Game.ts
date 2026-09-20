@@ -19,6 +19,7 @@ import { Input } from "@/player/Input";
 import { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
 import { HUD } from "@/ui/HUD";
 import { WorldLabels } from "@/ui/WorldLabels";
+import { PostFX } from "@/rendering/PostFX";
 import { Minimap } from "@/ui/Minimap";
 import { LandmarkPanel } from "@/ui/LandmarkPanel";
 import { LandmarkManager } from "@/landmarks/LandmarkManager";
@@ -61,6 +62,7 @@ export class Game {
   private traffic?: Traffic;
   private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
+  private postfx: PostFX | undefined;
   private readonly audio = new AudioManager();
   private readonly timeOfDay = new TimeOfDay();
   private gpsWatchId: number | null = null;
@@ -87,6 +89,19 @@ export class Game {
 
     window.addEventListener("resize", this.onResize);
     this.onResize();
+
+    try {
+      this.postfx = new PostFX(
+        this.renderer.instance,
+        this.sceneManager.scene,
+        this.cameraRig.camera,
+        window.innerWidth,
+        window.innerHeight,
+      );
+    } catch (error) {
+      console.warn("[postfx] disabled:", error);
+      this.postfx = undefined;
+    }
   }
 
   /** Browsers require a user gesture before audio can start. */
@@ -211,6 +226,7 @@ export class Game {
     const height = window.innerHeight;
     this.renderer.setSize(width, height);
     this.cameraRig.resize(width / height);
+    this.postfx?.setSize(width, height);
   };
 
   start(): void {
@@ -268,10 +284,15 @@ export class Game {
     this.hud.setClock(this.timeOfDay.label);
     this.audio.updateAmbience(delta, this.timeOfDay.isNight);
     this.updateSun(this.timeOfDay.getLightDirection());
-    this.renderer.instance.render(
-      this.sceneManager.scene,
-      this.cameraRig.camera,
-    );
+
+    if (this.postfx) {
+      this.postfx.render(delta, this.sceneManager.scene, this.cameraRig.camera);
+    } else {
+      this.renderer.instance.render(
+        this.sceneManager.scene,
+        this.cameraRig.camera,
+      );
+    }
     this.hud.update(delta, this.player);
     this.input.endFrame();
   };
@@ -285,6 +306,7 @@ export class Game {
     if (this.input.wasPressed("KeyM")) this.minimap?.toggle();
     if (this.input.wasPressed("KeyL")) void this.startAtDeviceLocation();
     if (this.input.wasPressed("KeyG")) this.toggleGpsTracking();
+    if (this.input.wasPressed("KeyP")) this.postfx?.toggle();
     if (this.input.wasPressed("KeyF")) {
       vehicles.toggleMount(this.player);
       const mounted = vehicles.mounted;

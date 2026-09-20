@@ -40,6 +40,7 @@
 | Pedestrians (instanced) | done |
 | Traffic (cars / CNG / rickshaws) | done |
 | City ambience audio (hum, horns, birds) | done |
+| Post-processing (GTAO, bloom, SMAA, tilt-shift) | done |
 | Device geolocation spawn + tracking | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |

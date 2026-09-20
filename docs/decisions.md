@@ -185,6 +185,33 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0015 — Post-processing stack for the "premium" look
+
+**Status:** Accepted
+
+**Decision**
+
+Render through an effect composer (`src/rendering/PostFX.ts`): RenderPass → GTAO
+(ground-truth ambient occlusion) → UnrealBloom → a custom grade pass
+(chromatic aberration, miniature tilt-shift blur, saturation/contrast, vignette)
+→ SMAA → OutputPass (ACES tone mapping). Toggle with **P**; falls back to direct
+rendering if the composer fails to initialise.
+
+**Rationale**
+
+The gap between "blockout" and "amazing" is mostly post-processing and art
+direction, not geometry (see the Jalan KL comparison in `references.md`).
+GTAO in particular grounds buildings so they stop reading as floating boxes.
+Budget: ~58 FPS with the stack on. A quality preset can drop AO/bloom on weaker
+GPUs later.
+
+**Alternatives considered**
+
+- pmndrs `postprocessing` — good, but three's built-in passes (GTAO, UnrealBloom,
+  SMAA, Output) covered the need without another dependency.
+
+---
+
 ## ADR-0014 — City life is instanced ambience, not simulation
 
 **Status:** Accepted
