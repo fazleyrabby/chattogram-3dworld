@@ -144,7 +144,13 @@ export class Game {
     this.labels = new WorldLabels(buildings.named, this.getHeight, (name) =>
       this.landmarks?.selectByName(name),
     );
-    this.minimap = new Minimap(document.body, buildings.list, roads.roads, buildings.named);
+    this.minimap = new Minimap(
+      document.body,
+      buildings.list,
+      roads.roads,
+      buildings.named,
+      (x, z) => this.travelTo(x, z),
+    );
     this.vehicles = new VehicleManager(this.sceneManager.scene, this.getHeight);
     await this.loadAvatar();
 
@@ -304,6 +310,7 @@ export class Game {
     if (this.input.wasPressed("KeyC")) vehicles.summon("car", this.player);
     if (this.input.wasPressed("KeyB")) vehicles.summon("bicycle", this.player);
     if (this.input.wasPressed("KeyM")) this.minimap?.toggle();
+    if (this.input.wasPressed("KeyN")) this.minimap?.toggleLarge();
     if (this.input.wasPressed("KeyL")) void this.startAtDeviceLocation();
     if (this.input.wasPressed("KeyG")) this.toggleGpsTracking();
     if (this.input.wasPressed("KeyP")) this.postfx?.toggle();
@@ -318,6 +325,15 @@ export class Game {
         this.cameraRig.distance = 12;
       }
     }
+  }
+
+  /** Teleports the player to a world position (map click / pin). */
+  private travelTo(x: number, z: number): void {
+    if (this.vehicles?.mounted) this.vehicles.toggleMount(this.player);
+    this.player.position.set(x, this.getHeight(x, z), z);
+    this.player.velocity.set(0, 0, 0);
+    this.player.sync();
+    this.cameraRig.snap();
   }
 
   private updateSun(direction: THREE.Vector3): void {

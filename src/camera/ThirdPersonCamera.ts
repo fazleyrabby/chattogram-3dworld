@@ -69,6 +69,11 @@ export class ThirdPersonCamera {
     this.camera.lookAt(this.currentTarget);
   }
 
+  /** Jumps the follow smoothing (used after a teleport). */
+  snap(): void {
+    this.initialized = false;
+  }
+
   resize(aspect: number): void {
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();

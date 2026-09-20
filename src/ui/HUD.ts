@@ -27,7 +27,7 @@ export class HUD {
       <div class="hud__controls">
         WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
         Riding: W Accelerate &middot; S Brake / Reverse &middot; A/D Steer &middot; Space Handbrake<br />
-        E Explore &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Minimap &middot; T Time &middot; L Locate &middot; G GPS &middot; P Post-FX
+        E Explore &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Minimap &middot; N Big map (click to travel) &middot; T Time &middot; L Locate &middot; G GPS &middot; P Post-FX
       </div>
     `;
 

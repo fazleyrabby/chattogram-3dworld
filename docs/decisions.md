@@ -185,6 +185,26 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0016 — Map is interactive (click to travel)
+
+**Status:** Accepted
+
+**Decision**
+
+The minimap is clickable: clicking a named pin teleports the player to that
+landmark, and clicking elsewhere travels to that world point (inverse-mapped
+through the same crop transform). **N** enlarges the map (240 → 640 px, 520 →
+1500 m) for easier picking. The camera snaps after a teleport; a mounted vehicle
+is dismounted first.
+
+**Rationale**
+
+Directly inspired by Jalan KL's "tap a pin → Go here" visitor map. Makes a small
+world feel navigable without walking everywhere, and reuses the minimap's
+existing crop/scale math — no extra data or systems.
+
+---
+
 ## ADR-0015 — Post-processing stack for the "premium" look
 
 **Status:** Accepted

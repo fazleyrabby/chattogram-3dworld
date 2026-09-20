@@ -2,32 +2,47 @@ import type { BuildingData, NamedBuilding } from "@/world/Buildings";
 import type { RoadData } from "@/world/Roads";
 import type { Player } from "@/player/Player";
 
-const SIZE = 240;
-const SPAN = 520; // meters across the minimap view
-const MARGIN = 300; // meters of extra static map around buildings
+const SMALL = { size: 240, span: 520 };
+const LARGE = { size: 640, span: 1500 };
+const MARGIN = 300;
+
+interface Pin {
+  name: string;
+  worldX: number;
+  worldZ: number;
+  screenX: number;
+  screenY: number;
+}
 
 /**
- * Canvas2D minimap (spec §55, MVP-core).
+ * Canvas2D minimap / map view (spec §55, MVP-core).
  *
- * Reuses the same world vectors as the 3D scene (roads + buildings) — no second
- * data pipeline. The static world is rendered once to an offscreen canvas; each
- * frame only a player-centred crop is blitted, with named-place labels and a
- * facing arrow drawn on top.
+ * Reuses the same world vectors as the 3D scene. The static world is rendered
+ * once; each frame a player-centred crop is blitted with named-place pins and a
+ * facing arrow. **Click anywhere to travel** (or click a pin). Toggle size with
+ * **N**. Reuses the same data — no second pipeline.
  */
 export class Minimap {
   private readonly container: HTMLDivElement;
   private readonly canvas: HTMLCanvasElement;
-  private readonly ctx: CanvasRenderingContext2D;
+  private ctx: CanvasRenderingContext2D;
   private readonly staticMap: HTMLCanvasElement;
+  private readonly named: NamedBuilding[];
+  private readonly pins: Pin[] = [];
 
-  private readonly minX: number;
-  private readonly maxZ: number;
+  private minX = 0;
+  private maxZ = 0;
   private readonly staticW: number;
   private readonly staticH: number;
-  private readonly scale: number;
-  private readonly named: NamedBuilding[];
 
+  private size = SMALL.size;
+  private span = SMALL.span;
+  private scale = SMALL.size / SMALL.span;
+
+  private sx = 0;
+  private sy = 0;
   private visible = true;
+  private large = false;
   private gps: { x: number; z: number } | null = null;
 
   constructor(
@@ -35,10 +50,10 @@ export class Minimap {
     buildings: BuildingData[],
     roads: RoadData[],
     named: NamedBuilding[],
+    private readonly onTravel: (x: number, z: number) => void,
   ) {
     this.named = named;
 
-    // World-local extent of the populated area.
     let minX = Infinity;
     let maxX = -Infinity;
     let minZ = Infinity;
@@ -61,28 +76,56 @@ export class Minimap {
     this.maxZ = maxZ + MARGIN;
     this.staticW = Math.ceil(maxX - minX + MARGIN * 2);
     this.staticH = Math.ceil(maxZ - minZ + MARGIN * 2);
-    this.scale = SIZE / SPAN;
 
     this.staticMap = this.renderStatic(buildings, roads);
 
     this.container = document.createElement("div");
     this.container.className = "minimap";
     this.canvas = document.createElement("canvas");
-    const dpr = Math.min(window.devicePixelRatio, 2);
-    this.canvas.width = SIZE * dpr;
-    this.canvas.height = SIZE * dpr;
-    this.canvas.style.width = `${SIZE}px`;
-    this.canvas.style.height = `${SIZE}px`;
     this.container.appendChild(this.canvas);
     parent.appendChild(this.container);
 
-    const ctx = this.canvas.getContext("2d");
-    if (!ctx) throw new Error("Minimap: 2D context unavailable");
-    this.ctx = ctx;
-    this.ctx.scale(dpr, dpr);
+    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    this.applySize();
+    this.canvas.addEventListener("pointerdown", this.onPointerDown);
   }
 
-  /** world-local (x, z) -> static canvas pixel (px, py), north-up. */
+  private applySize(): void {
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    this.canvas.width = this.size * dpr;
+    this.canvas.height = this.size * dpr;
+    this.canvas.style.width = `${this.size}px`;
+    this.canvas.style.height = `${this.size}px`;
+    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    this.ctx.scale(dpr, dpr);
+    this.scale = this.size / this.span;
+  }
+
+  private onPointerDown = (event: PointerEvent): void => {
+    const rect = this.canvas.getBoundingClientRect();
+    const cx = event.clientX - rect.left;
+    const cy = event.clientY - rect.top;
+
+    // Pin hit-test first.
+    let best: Pin | null = null;
+    let bestDistance = 16;
+    for (const pin of this.pins) {
+      const distance = Math.hypot(pin.screenX - cx, pin.screenY - cy);
+      if (distance < bestDistance) {
+        best = pin;
+        bestDistance = distance;
+      }
+    }
+    if (best) {
+      this.onTravel(best.worldX, best.worldZ);
+      return;
+    }
+
+    const srcX = this.sx + cx / this.scale;
+    const srcY = this.sy + cy / this.scale;
+    this.onTravel(srcX + this.minX, this.maxZ - srcY);
+  };
+
   private toStatic(x: number, z: number): [number, number] {
     return [x - this.minX, this.maxZ - z];
   }
@@ -97,13 +140,11 @@ export class Minimap {
     ctx.fillStyle = "#cdd5c2";
     ctx.fillRect(0, 0, this.staticW, this.staticH);
 
-    // Buildings
     ctx.fillStyle = "#b7ab97";
     for (const b of buildings) {
       ctx.beginPath();
       for (let i = 0; i < b.ring.length; i++) {
-        const [x, z] = b.ring[i]!;
-        const [px, py] = this.toStatic(x, z);
+        const [px, py] = this.toStatic(b.ring[i]![0], b.ring[i]![1]);
         if (i === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
@@ -111,14 +152,12 @@ export class Minimap {
       ctx.fill();
     }
 
-    // Roads: casing then fill (map style)
     for (const pass of [0, 1]) {
       for (const road of roads) {
         if (road.points.length < 2) continue;
         ctx.beginPath();
         for (let i = 0; i < road.points.length; i++) {
-          const [x, z] = road.points[i]!;
-          const [px, py] = this.toStatic(x, z);
+          const [px, py] = this.toStatic(road.points[i]![0], road.points[i]![1]);
           if (i === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         }
@@ -134,7 +173,6 @@ export class Minimap {
     return canvas;
   }
 
-  /** Shows the device's real position marker on the map. */
   setGps(point: { x: number; z: number } | null): void {
     this.gps = point;
   }
@@ -149,18 +187,31 @@ export class Minimap {
     return this.visible;
   }
 
+  /** Enlarges the map for easier pin picking / travel. */
+  toggleLarge(): boolean {
+    this.large = !this.large;
+    this.size = this.large ? LARGE.size : SMALL.size;
+    this.span = this.large ? LARGE.span : SMALL.span;
+    this.applySize();
+    return this.large;
+  }
+
   update(player: Player): void {
     if (!this.visible) return;
     const ctx = this.ctx;
+    const size = this.size;
 
     const [pcx, pcy] = this.toStatic(player.position.x, player.position.z);
-    const sx = clamp(pcx - SPAN / 2, 0, Math.max(0, this.staticW - SPAN));
-    const sy = clamp(pcy - SPAN / 2, 0, Math.max(0, this.staticH - SPAN));
+    this.sx = clamp(pcx - this.span / 2, 0, Math.max(0, this.staticW - this.span));
+    this.sy = clamp(pcy - this.span / 2, 0, Math.max(0, this.staticH - this.span));
+    const sx = this.sx;
+    const sy = this.sy;
 
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.drawImage(this.staticMap, sx, sy, SPAN, SPAN, 0, 0, SIZE, SIZE);
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(this.staticMap, sx, sy, this.span, this.span, 0, 0, size, size);
 
-    // Named place markers + labels
+    // Pins + labels.
+    this.pins.length = 0;
     ctx.font = "600 10px ui-monospace, Menlo, monospace";
     ctx.textBaseline = "middle";
     let drawn = 0;
@@ -168,28 +219,29 @@ export class Minimap {
       const [mx, my] = this.toStatic(place.x, place.z);
       const dx = (mx - sx) * this.scale;
       const dy = (my - sy) * this.scale;
-      if (dx < 4 || dy < 4 || dx > SIZE - 4 || dy > SIZE - 4) continue;
-      if (drawn++ > 8) break;
+      if (dx < 4 || dy < 4 || dx > size - 4 || dy > size - 4) continue;
+      this.pins.push({ name: place.name, worldX: place.x, worldZ: place.z, screenX: dx, screenY: dy });
+      if (drawn++ > 12) continue;
 
       ctx.fillStyle = "#c0392b";
       ctx.beginPath();
-      ctx.arc(dx, dy, 2.6, 0, Math.PI * 2);
+      ctx.arc(dx, dy, 3, 0, Math.PI * 2);
       ctx.fill();
 
       const label = place.name.length > 18 ? `${place.name.slice(0, 17)}…` : place.name;
       const w = ctx.measureText(label).width;
       ctx.fillStyle = "rgba(16,22,30,0.82)";
-      ctx.fillRect(dx + 4, dy - 7, w + 8, 14);
+      ctx.fillRect(dx + 5, dy - 7, w + 8, 14);
       ctx.fillStyle = "#f4f7fa";
-      ctx.fillText(label, dx + 8, dy + 0.5);
+      ctx.fillText(label, dx + 9, dy + 0.5);
     }
 
-    // Device GPS marker
+    // GPS marker.
     if (this.gps) {
       const [gx, gy] = this.toStatic(this.gps.x, this.gps.z);
       const dx = (gx - sx) * this.scale;
       const dy = (gy - sy) * this.scale;
-      if (dx >= 0 && dy >= 0 && dx <= SIZE && dy <= SIZE) {
+      if (dx >= 0 && dy >= 0 && dx <= size && dy <= size) {
         ctx.strokeStyle = "#1f9d55";
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -202,13 +254,12 @@ export class Minimap {
       }
     }
 
-    // Player arrow (facing +Z is forward; screen y is inverted)
+    // Player arrow.
     const px = (pcx - sx) * this.scale;
     const py = (pcy - sy) * this.scale;
-    const dir = player.facing;
     ctx.save();
     ctx.translate(px, py);
-    ctx.rotate(Math.atan2(Math.sin(dir), Math.cos(dir)));
+    ctx.rotate(player.facing);
     ctx.fillStyle = "#2f80ed";
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
@@ -222,15 +273,19 @@ export class Minimap {
     ctx.stroke();
     ctx.restore();
 
-    // Compass
+    // Compass + hint.
     ctx.fillStyle = "rgba(16,22,30,0.75)";
     ctx.beginPath();
-    ctx.arc(SIZE - 16, 16, 11, 0, Math.PI * 2);
+    ctx.arc(size - 16, 16, 11, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#f4f7fa";
     ctx.textAlign = "center";
-    ctx.fillText("N", SIZE - 16, 16.5);
+    ctx.fillText("N", size - 16, 16.5);
     ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(16,22,30,0.62)";
+    ctx.fillRect(8, size - 22, 132, 15);
+    ctx.fillStyle = "#f4f7fa";
+    ctx.fillText("Click map to travel · N", 13, size - 14.5);
   }
 }
 
