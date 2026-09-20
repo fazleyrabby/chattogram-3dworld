@@ -20,6 +20,7 @@ export class HUD {
       </div>
       <div class="hud__controls">
         WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
+        Riding: W Accelerate &middot; S Brake / Reverse &middot; A/D Steer &middot; Space Handbrake<br />
         C Car &middot; B Bicycle &middot; F Ride / Dismount &middot; M Minimap
       </div>
     `;

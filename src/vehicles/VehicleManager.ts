@@ -100,7 +100,13 @@ export class VehicleManager {
 
   drive(delta: number, input: Input): void {
     if (!this.active) return;
-    this.active.update(delta, input.moveForward, input.moveRight, this.getHeight);
+    this.active.update(
+      delta,
+      input.moveForward,
+      input.moveRight,
+      input.jumpPressed,
+      this.getHeight,
+    );
   }
 
   /** Fills `out` with the ride camera target; returns false when not riding. */

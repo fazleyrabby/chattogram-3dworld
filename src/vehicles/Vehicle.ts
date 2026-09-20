@@ -68,14 +68,29 @@ export class Vehicle {
     this.sync();
   }
 
-  update(delta: number, throttle: number, steer: number, getHeight: HeightProvider): void {
+  update(
+    delta: number,
+    throttle: number,
+    steer: number,
+    handbrake: boolean,
+    getHeight: HeightProvider,
+  ): void {
     const spec = this.spec;
 
-    if (throttle > 0) {
+    if (handbrake) {
+      // Hard brake toward zero — never reverses.
+      const decel = spec.braking * 1.8 * delta;
+      if (Math.abs(this.speed) <= decel) this.speed = 0;
+      else this.speed -= Math.sign(this.speed) * decel;
+    } else if (throttle > 0) {
       this.speed += spec.acceleration * throttle * delta;
     } else if (throttle < 0) {
-      // Brake first, then reverse.
-      this.speed += (this.speed > 0 ? -spec.braking : spec.acceleration * 0.6) * throttle * delta;
+      // Brake to a stop first, then accelerate in reverse.
+      if (this.speed > 0.1) {
+        this.speed -= spec.braking * delta;
+      } else {
+        this.speed -= spec.acceleration * 0.8 * delta;
+      }
     } else {
       this.speed -= Math.sign(this.speed) * spec.drag * delta * 4;
       if (Math.abs(this.speed) < 0.05) this.speed = 0;
