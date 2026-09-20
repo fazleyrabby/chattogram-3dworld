@@ -71,10 +71,15 @@ export class VehicleManager {
     const vehicle = this.active;
     if (!vehicle) return;
     const p = vehicle.object.position;
-    // Place the hips on the seat: avatar hip is 0.92 up from its feet origin.
-    const hipHeight = vehicle.kind === "car" ? 0.55 : 0.84;
+    // Place the hips on the saddle/seat: avatar hip is 0.92 up from its feet
+    // origin. The bicycle saddle sits behind the vehicle origin, so shift the
+    // rider back along the heading.
+    const hipHeight = vehicle.kind === "car" ? 0.55 : 0.86;
     const seatHeight = hipHeight - 0.92;
-    player.position.set(p.x, p.y + seatHeight, p.z);
+    const back = vehicle.kind === "bicycle" ? 0.32 : 0;
+    const ox = -Math.sin(vehicle.heading) * back;
+    const oz = -Math.cos(vehicle.heading) * back;
+    player.position.set(p.x + ox, p.y + seatHeight, p.z + oz);
     player.facing = vehicle.heading;
     player.sync();
   }

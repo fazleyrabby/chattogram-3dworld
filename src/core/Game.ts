@@ -149,8 +149,8 @@ export class Game {
       this.vehicles?.drive(delta, this.input);
       this.vehicles?.syncRider(this.player);
       this.player.updateRiding(delta);
-      // Camera trails the vehicle so W reads as forward.
-      this.cameraRig.yaw = mounted.heading + Math.PI;
+      // Camera is free to orbit while riding (mouse drag / wheel zoom), exactly
+      // like on foot; it only follows the vehicle's position.
       if (!this.vehicles?.getCameraTarget(this.cameraTarget)) {
         this.player.getCameraTarget(this.cameraTarget);
       }

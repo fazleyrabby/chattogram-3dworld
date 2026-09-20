@@ -188,15 +188,16 @@ function buildBicycle(): THREE.Group {
     group.add(mesh);
   };
 
-  // Simple frame: top tube, down tube, seat tube, fork.
-  bar(0, 0.72, 0.0, 0.72, "z");
-  bar(0, 0.55, 0.05, 0.55, "y");
-  bar(0, 0.78, -0.5, 0.06, "y");
-  bar(0, 0.62, 0.42, 0.36, "y");
-  bar(0, 0.98, -0.5, 0.32, "x");
+  // Frame: front (handlebar/fork) at +Z, rear (saddle) at -Z.
+  bar(0, 0.63, 0.5, 0.62, "y"); // head tube / fork
+  bar(0, 0.66, -0.45, 0.5, "y"); // seat tube
+  bar(0, 0.87, 0.02, 0.98, "z"); // top tube
+  bar(0, 0.54, 0.02, 0.98, "z"); // down tube
+  bar(0, 0.98, 0.5, 0.46, "x"); // handlebar
+  bar(0, 0.45, 0.0, 0.18, "x"); // pedal crank
 
   const seat = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.34), seatMat);
-  seat.position.set(0, 0.84, -0.48);
+  seat.position.set(0, 0.93, -0.46);
   seat.castShadow = true;
   group.add(seat);
 
