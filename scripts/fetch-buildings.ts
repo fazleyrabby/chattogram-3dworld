@@ -64,6 +64,9 @@ interface Building {
   description?: string;
   amenity?: string;
   tourism?: string;
+  roofShape?: string;
+  colour?: string;
+  levels?: number;
 }
 
 function classify(tags: Record<string, string>): string {
@@ -215,6 +218,12 @@ async function main(): Promise<void> {
           height: round(estimateHeight(way.tags, type)),
           ring,
         };
+        if (way.tags["roof:shape"]) building.roofShape = way.tags["roof:shape"];
+        if (way.tags["building:colour"] || way.tags["building:color"]) {
+          building.colour = way.tags["building:colour"] ?? way.tags["building:color"];
+        }
+        const levels = parseNumber(way.tags["building:levels"]);
+        if (levels) building.levels = Math.round(levels);
         const name = way.tags.name ?? way.tags["name:en"];
         if (name) {
           building.name = name;

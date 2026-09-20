@@ -37,11 +37,32 @@ Buddhist Bihar · Equity Central · Salam Manjil · Satter Mansion.
 ## Rendering
 
 - `src/world/Buildings.ts`: each footprint extruded to its estimated height and
-  draped on terrain; **all merged into one mesh** (single draw call, §38).
+  draped on terrain. Walls and roofs are two merged meshes (low draw calls, §38).
 - Per-face winding is corrected (outward for walls, up for roofs).
-- Vertex colors by type; roof triangulated with `THREE.ShapeUtils.triangulateShape`.
 - `src/ui/WorldLabels.ts`: HTML overlay labels for named buildings — fade with
   distance, nearest 12 only, within 400 m (§33).
+
+## Realism pass
+
+- **Window facades**: a procedural `CanvasTexture` (one window per 3 m tile)
+  multiplied by vertex color; wall UVs are `u = distance/3`, `v = height/3`.
+- **Level rooflines**: wall bottoms follow the terrain (nothing floats) but the
+  roof is level at `min(ground) + height`, so walls stay vertical instead of
+  shearing along slopes.
+- **Parapets** on flat roofs; **hip roofs** on some small residential buildings;
+  **domes + minarets** on religious buildings.
+- **Per-building color variation** (deterministic hash) so rows don't look cloned.
+- `roof:shape`, `building:colour` and `building:levels` are captured by the fetch
+  but are essentially absent in this district, so variety is procedural.
+
+### Bug fixed
+
+Non-indexed geometry needs **6 vertices per quad** (two triangles). The first
+realism pass pushed only 4, so a triangle was missing from every wall and roofs
+rendered inside-out — buildings looked sliced/floating. Fixed by emitting both
+triangles per wall quad.
+
+![buildings](../images/buildings-detail.png)
 
 ## Height algorithm (§13)
 

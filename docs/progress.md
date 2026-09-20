@@ -28,6 +28,9 @@
 | Water / coastline (OSM polygons) | pending |
 | Buildings (OSM footprints + LOD) | spawn district done; city-wide pending |
 | Named-building world labels | done |
+| Building realism (windows, roofs, domes) | done |
+| Named-building architecture detail | done (procedural) |
+| Blender hero models for iconic landmarks | pending |
 | Landmark interaction + info panel | done |
 | Wikipedia/Wikidata enrichment | done |
 | Minimap (§55, Canvas2D, names) | done |

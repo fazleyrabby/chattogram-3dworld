@@ -58,6 +58,21 @@ conquest of Chittagong"), link and attribution all correct.
 
 ![landmark panel](../images/landmark-panel.png)
 
+## Named-building architecture (ADR-0013)
+
+`src/world/LandmarkDetails.ts` gives every named building a plinth, a cornice,
+and a type-inspired treatment:
+
+- **Religious** — drummed dome + finial, four corner minarets, arched portal.
+- **Civic / commercial / educational** — colonnaded portico + roof slab.
+
+These are stylised interpretations of the real building types (§76–77), added on
+top of the procedural shell (which skips its own roof decorations for named
+buildings so detail isn't duplicated). Hand-authored Blender GLB hero models for
+the most iconic few are the intended next step.
+
+![landmark architecture](../images/landmark-architecture.png)
+
 ## Not yet
 
 - Clickable 3D raycast selection (labels only, for now).

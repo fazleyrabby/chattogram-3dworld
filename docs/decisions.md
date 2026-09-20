@@ -185,6 +185,33 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0013 — Named buildings get a procedural detail pass
+
+**Status:** Accepted
+
+**Decision**
+
+Named (authentic) buildings keep their OSM footprint and estimated height, but
+gain extra architecture from `src/world/LandmarkDetails.ts`, inspired by their
+real typology: a plinth and cornice for all; **religious** buildings get a
+drummed dome, finial, four corner minarets and an arched portal; **civic /
+commercial / educational** buildings get a colonnaded portico with a roof slab.
+
+**Rationale**
+
+Spec §16 says important buildings should not rely solely on procedural
+extrusion, and §76–77 asks for "geographically based," stylised results — not
+literal replicas. A type-inspired procedural pass scales to all 38 named
+buildings immediately, and keeps the pipeline data-driven.
+
+**Alternatives / next step**
+
+Hand-authoring GLB hero models in Blender (still available) gives real
+per-building fidelity for the most iconic few; the procedural pass remains the
+fallback and the base shell. This is the intended follow-up for a curated set.
+
+---
+
 ## ADR-0011 — Day/night is a single time value
 
 **Status:** Accepted

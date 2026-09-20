@@ -4,6 +4,7 @@ import { SceneManager } from "@/core/SceneManager";
 import { Terrain } from "@/world/Terrain";
 import { Roads } from "@/world/Roads";
 import { Buildings } from "@/world/Buildings";
+import { LandmarkDetails } from "@/world/LandmarkDetails";
 import { TerrainHeightfield } from "@/world/TerrainHeightfield";
 import { Lighting } from "@/world/Lighting";
 import { Player } from "@/player/Player";
@@ -102,6 +103,13 @@ export class Game {
     const terrain = new Terrain(this.heightfield);
     const roads = await Roads.load(this.getHeight);
     const buildings = await Buildings.load(this.getHeight);
+    const landmarkDetails = LandmarkDetails.build(
+      buildings.list,
+      buildings.named,
+      this.getHeight,
+    );
+    this.sceneManager.scene.add(landmarkDetails.object);
+
     const landmarkPanel = new LandmarkPanel(document.body);
     this.landmarks = new LandmarkManager(buildings.named, landmarkPanel, this.hud);
     this.labels = new WorldLabels(buildings.named, this.getHeight, (name) =>
