@@ -18,10 +18,10 @@
   "encoding": "float32le",
   "noData": -32767,
   "elevation": {
-    "min": -0.8,
-    "max": 455.68
+    "min": 1.07,
+    "max": 58.27
   },
   "source": "Copernicus DEM GLO-30",
   "attribution": "© DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
-  "generatedAt": "2026-09-20T17:51:58.723Z"
+  "generatedAt": "2026-09-20T18:22:55.752Z"
 }

@@ -5,6 +5,10 @@ const ROADS_PATH = "/world/chattogram/roads/roads.json";
 // Roads sit almost flush with the terrain so the avatar stands on them. A small
 // lift plus polygon offset avoids z-fighting without visibly raising the surface.
 const SURFACE_OFFSET = 0.05;
+// Mid slate-grey, not near-black: at grazing angles the road fills much of the
+// frame, and a very dark albedo (plus vignette/contrast) read as a hole in the
+// world. This keeps junctions legible as pavement.
+const ASPHALT_COLOR = 0x51515a;
 const CENTER_LINE_WIDTH = 0.5;
 const CENTER_LINE_TYPES = new Set(["motorway", "trunk", "primary", "secondary"]);
 
@@ -62,7 +66,7 @@ export class Roads {
       }
     }
 
-    const asphaltMesh = buildMesh(asphalt, 0x2b2b30, 0);
+    const asphaltMesh = buildMesh(asphalt, ASPHALT_COLOR, 0);
     asphaltMesh.name = "RoadAsphalt";
     asphaltMesh.receiveShadow = true;
     group.add(asphaltMesh);
@@ -117,7 +121,9 @@ function addRibbon(
     const b = a + 1;
     const c = a + 2;
     const d = a + 3;
-    buffers.indices.push(a, b, c, b, d, c);
+    // Wind so the ribbon's normals point UP (+Y). The other winding made every
+    // road face downward, which GTAO read as fully occluded -> black patches.
+    buffers.indices.push(a, c, b, b, c, d);
   }
 }
 
@@ -132,7 +138,7 @@ function buildMesh(buffers: Buffers, color: number, renderOrder: number): THREE.
 
   const material = new THREE.MeshStandardMaterial({
     color,
-    roughness: 0.9,
+    roughness: 0.85,
     metalness: 0.0,
     side: THREE.DoubleSide,
     polygonOffset: true,

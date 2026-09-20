@@ -55,26 +55,59 @@ async function main(): Promise<void> {
   const tiff = await fromUrl(url);
   const image = await tiff.getImage();
 
-  // readRasters with bbox + width/height resamples the COG to our grid.
-  const rasters = await image.readRasters({
-    bbox: [bounds.west, bounds.south, bounds.east, bounds.north],
-    width,
-    height,
-    resampleMethod: "bilinear",
-  });
+  // Read the target bounds as a *native-resolution pixel window* and do our own
+  // box-filter downsample. Do NOT pass { bbox, width, height } to readRasters:
+  // on this COG that path mis-samples and invents huge spikes (e.g. a bogus
+  // ~455 m ridge at the NE corner where the real terrain is ~5 m).
+  const [resX, resY] = image.getResolution();
+  const [originX, originY] = image.getOrigin();
+  const absX = Math.abs(resX);
+  const absY = Math.abs(resY);
 
+  const px0 = Math.max(0, Math.floor((bounds.west - originX) / absX));
+  const px1 = Math.min(image.getWidth(), Math.ceil((bounds.east - originX) / absX));
+  const py0 = Math.max(0, Math.floor((originY - bounds.north) / absY));
+  const py1 = Math.min(image.getHeight(), Math.ceil((originY - bounds.south) / absY));
+
+  console.log(`[dem] native window ${px0},${py0} .. ${px1},${py1} (${px1 - px0}x${py1 - py0} px)`);
+
+  const rasters = await image.readRasters({ window: [px0, py0, px1, py1] });
   const band = rasters[0] as ArrayLike<number>;
-  const data = new Float32Array(width * height);
+  const srcW = px1 - px0;
+  const srcH = py1 - py0;
+  if (srcW <= 0 || srcH <= 0) {
+    throw new Error("[dem] empty pixel window for the configured bounds");
+  }
 
+  // Area-average each target cell from the native pixels that fall inside it.
+  const data = new Float32Array(width * height);
   let min = Number.POSITIVE_INFINITY;
   let max = Number.NEGATIVE_INFINITY;
 
-  for (let i = 0; i < data.length; i++) {
-    const raw = band[i] as number;
-    const value = raw === NO_DATA || !Number.isFinite(raw) ? 0 : raw;
-    data[i] = value;
-    if (value < min) min = value;
-    if (value > max) max = value;
+  for (let row = 0; row < height; row++) {
+    const sy0 = Math.floor((row / height) * srcH);
+    const sy1 = Math.max(sy0 + 1, Math.floor(((row + 1) / height) * srcH));
+
+    for (let col = 0; col < width; col++) {
+      const sx0 = Math.floor((col / width) * srcW);
+      const sx1 = Math.max(sx0 + 1, Math.floor(((col + 1) / width) * srcW));
+
+      let sum = 0;
+      let count = 0;
+      for (let sy = sy0; sy < sy1 && sy < srcH; sy++) {
+        for (let sx = sx0; sx < sx1 && sx < srcW; sx++) {
+          const raw = band[sy * srcW + sx] as number;
+          if (raw === NO_DATA || !Number.isFinite(raw)) continue;
+          sum += raw;
+          count += 1;
+        }
+      }
+
+      const value = count > 0 ? sum / count : 0;
+      data[row * width + col] = value;
+      if (value < min) min = value;
+      if (value > max) max = value;
+    }
   }
 
   mkdirSync(OUT_DIR, { recursive: true });

@@ -482,3 +482,48 @@ sounded artificial). **U** mutes. Footsteps stay synthesized.
 
 - HTMLAudio/asset files now — licensing + load overhead for little gain yet.
 - Third-party audio engine — unnecessary for this scope.
+
+---
+
+## ADR-0021 — Resample the DEM ourselves (don't trust `readRasters` bbox)
+
+**Status:** Accepted
+
+**Decision**
+
+`scripts/fetch-dem.ts` reads the Copernicus GLO-30 COG as a **native-resolution
+pixel window** (`{ window }`) and does its own area-average (box filter) downsample
+to the target grid. It no longer calls `readRasters({ bbox, width, height })`.
+
+**Rationale**
+
+The bbox-resampling path on this COG silently mis-samples. For the compact
+district it returned a **bogus ~455 m ridge along the NE edge** (real elevation
+there is ~5 m), which rendered as a wall of sharp "shark-fin" mountains and made
+the whole valley look like steep hills. The fake slopes also stretched buildings
+and road ribbons draped on them (dark patches / "squished" look). Reading the
+native window and resampling ourselves gives the true range for the district:
+**1.07 … 58.27 m** (was −0.8 … 455.7 m). Verified against Open-Meteo
+(Copernicus GLO-90) point queries, which also report ~3–36 m across the box.
+
+**Gotcha**
+
+The same root cause can hide behind the original city-wide box: a 543 m max was
+recorded in M2 for the much larger footprint, so a high maximum alone is not
+proof of a bug — check it against an independent elevation source.
+
+**Update (road tone).** With real slopes gone, the remaining "black hole" at
+Cheragi Pahar was the asphalt of a dense junction at a grazing camera angle,
+crushed further by the vignette/contrast grade. Asphalt is now a mid slate-grey
+(`0x51515a`).
+
+**Update (road winding).** The bigger cause of that black patch was the road
+ribbon **winding**: `addRibbon` emitted triangles whose normals all pointed
+**down** (−Y). GTAO reads the normal buffer, so every road was treated as fully
+occluded and shaded to black — boosting ambient did nothing. Reversed the index
+order (`a, c, b, b, c, d`) so road normals face up; GTAO now leaves roads alone.
+
+**Alternatives considered**
+
+- Keep bbox resampling and clamp outliers — masks the bug, keeps wrong heights.
+- Switch DEM source — Copernicus is fine; the bug was in *how* we read it.
