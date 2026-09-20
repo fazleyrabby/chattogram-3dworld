@@ -16,6 +16,8 @@ import { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
 import { HUD } from "@/ui/HUD";
 import { WorldLabels } from "@/ui/WorldLabels";
 import { Minimap } from "@/ui/Minimap";
+import { LandmarkPanel } from "@/ui/LandmarkPanel";
+import { LandmarkManager } from "@/landmarks/LandmarkManager";
 import { WORLD_CONFIG } from "@/config/WorldConfig";
 import { geoToLocal } from "@/geography/Projection";
 import { createHeightProvider, type HeightProvider } from "@/geography/WorldHeight";
@@ -43,6 +45,7 @@ export class Game {
   private heightfield?: TerrainHeightfield;
   private labels?: WorldLabels;
   private minimap?: Minimap;
+  private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
   private readonly audio = new AudioManager();
   private running = false;
@@ -88,7 +91,11 @@ export class Game {
     const terrain = new Terrain(this.heightfield);
     const roads = await Roads.load(this.getHeight);
     const buildings = await Buildings.load(this.getHeight);
-    this.labels = new WorldLabels(buildings.named, this.getHeight);
+    const landmarkPanel = new LandmarkPanel(document.body);
+    this.landmarks = new LandmarkManager(buildings.named, landmarkPanel, this.hud);
+    this.labels = new WorldLabels(buildings.named, this.getHeight, (name) =>
+      this.landmarks?.selectByName(name),
+    );
     this.minimap = new Minimap(document.body, buildings.list, roads.roads, buildings.named);
     this.vehicles = new VehicleManager(this.sceneManager.scene, this.getHeight);
     await this.loadAvatar();
@@ -161,6 +168,7 @@ export class Game {
 
     this.cameraRig.update(delta, this.cameraTarget);
 
+    this.landmarks?.update(this.player, this.input);
     this.labels?.update(this.cameraRig.camera);
     this.minimap?.update(this.player);
     this.updateSun();

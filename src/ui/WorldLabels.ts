@@ -24,7 +24,11 @@ export class WorldLabels {
   private readonly items: LabelItem[] = [];
   private readonly projected = new THREE.Vector3();
 
-  constructor(buildings: NamedBuilding[], getHeight: HeightProvider) {
+  constructor(
+    buildings: NamedBuilding[],
+    getHeight: HeightProvider,
+    onSelect?: (name: string) => void,
+  ) {
     this.container = document.createElement("div");
     this.container.className = "world-labels";
     document.body.appendChild(this.container);
@@ -33,6 +37,10 @@ export class WorldLabels {
       const el = document.createElement("div");
       el.className = "world-label";
       el.textContent = building.name;
+      if (onSelect) {
+        el.classList.add("world-label--clickable");
+        el.addEventListener("click", () => onSelect(building.name));
+      }
       this.container.appendChild(el);
 
       this.items.push({

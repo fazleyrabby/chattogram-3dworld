@@ -8,6 +8,7 @@ import { localToGeo } from "@/geography/Projection";
 export class HUD {
   private readonly fpsEl: HTMLSpanElement;
   private readonly coordEl: HTMLSpanElement;
+  private readonly promptEl: HTMLDivElement;
   private fpsAccum = 0;
   private fpsFrames = 0;
 
@@ -18,15 +19,27 @@ export class HUD {
         <span data-fps>--</span> FPS &middot;
         <span data-coord>--</span>
       </div>
+      <div class="hud__prompt" hidden></div>
       <div class="hud__controls">
         WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
         Riding: W Accelerate &middot; S Brake / Reverse &middot; A/D Steer &middot; Space Handbrake<br />
-        C Car &middot; B Bicycle &middot; F Ride / Dismount &middot; M Minimap
+        E Explore landmark &middot; C Car &middot; B Bicycle &middot; F Ride / Dismount &middot; M Minimap
       </div>
     `;
 
     this.fpsEl = root.querySelector("[data-fps]") as HTMLSpanElement;
     this.coordEl = root.querySelector("[data-coord]") as HTMLSpanElement;
+    this.promptEl = root.querySelector(".hud__prompt") as HTMLDivElement;
+  }
+
+  /** Shows or hides the contextual interaction prompt (spec §56). */
+  setPrompt(text: string | null): void {
+    if (!text) {
+      if (!this.promptEl.hidden) this.promptEl.hidden = true;
+      return;
+    }
+    if (this.promptEl.textContent !== text) this.promptEl.textContent = text;
+    if (this.promptEl.hidden) this.promptEl.hidden = false;
   }
 
   update(delta: number, player: Player): void {

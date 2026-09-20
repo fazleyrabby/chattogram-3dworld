@@ -20,10 +20,15 @@ const TYPE_COLORS: Record<string, number> = {
 };
 
 export interface NamedBuilding {
+  id: string;
   name: string;
+  type: string;
   x: number;
   z: number;
   height: number;
+  wikidata?: string;
+  wikipedia?: string;
+  description?: string;
 }
 
 export interface BuildingData {
@@ -32,6 +37,11 @@ export interface BuildingData {
   name?: string;
   height: number;
   ring: Array<[number, number]>;
+  wikidata?: string;
+  wikipedia?: string;
+  description?: string;
+  amenity?: string;
+  tourism?: string;
 }
 
 interface BuildingsFile {
@@ -112,12 +122,18 @@ export class Buildings {
       }
 
       if (building.name) {
-        named.push({
+        const landmark: NamedBuilding = {
+          id: building.id,
           name: building.name,
+          type: building.type,
           x: centroid[0],
           z: centroid[1],
           height: building.height,
-        });
+        };
+        if (building.wikidata) landmark.wikidata = building.wikidata;
+        if (building.wikipedia) landmark.wikipedia = building.wikipedia;
+        if (building.description) landmark.description = building.description;
+        named.push(landmark);
       }
     }
 

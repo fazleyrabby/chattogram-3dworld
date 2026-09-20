@@ -59,18 +59,41 @@ interface Building {
   name?: string;
   height: number;
   ring: Array<[number, number]>;
+  wikidata?: string;
+  wikipedia?: string;
+  description?: string;
+  amenity?: string;
+  tourism?: string;
 }
 
 function classify(tags: Record<string, string>): string {
   const b = tags.building ?? "";
-  if (KNOWN_TYPES.has(b)) return b;
+  const name = `${tags.name ?? ""} ${tags["name:en"] ?? ""}`;
+
+  // Explicit tags win.
   if (tags.amenity === "place_of_worship" || b === "church" || b === "mosque") return "religious";
   if (tags.amenity === "hospital" || tags.amenity === "clinic") return "hospital";
   if (tags.amenity === "school" || tags.amenity === "kindergarten") return "school";
   if (tags.amenity === "university" || tags.amenity === "college") return "university";
-  if (tags.office || b === "commercial") return "commercial";
-  if (["house", "apartments", "detached", "terrace", "yes", "dormitory"].includes(b)) return "residential";
   if (b === "industrial" || tags.landuse === "industrial") return "industrial";
+  if (b !== "" && KNOWN_TYPES.has(b) && b !== "yes") return b;
+  if (tags.office || b === "commercial") return "commercial";
+
+  // Name heuristics (OSM building tags are often just building=yes).
+  if (/masjid|mosque|jame|madrasah|mazar|dargah|buddhist|bihar|temple|church|mandir|khanqah/i.test(name)) {
+    return "religious";
+  }
+  if (/school|college|academy|kindergarten/i.test(name)) return "school";
+  if (/hospital|clinic|medical|diagnostic/i.test(name)) return "hospital";
+  if (/university|polytechnic|institute of technology/i.test(name)) return "university";
+  if (/bank|market|shopping|plaza|tower|center|centre|mall|hotel|restaurant/i.test(name)) {
+    return "commercial";
+  }
+
+  if (b === "hotel") return "hotel";
+  if (["house", "apartments", "detached", "terrace", "yes", "dormitory", "residential"].includes(b)) {
+    return "residential";
+  }
   return "unknown";
 }
 
@@ -193,7 +216,14 @@ async function main(): Promise<void> {
           ring,
         };
         const name = way.tags.name ?? way.tags["name:en"];
-        if (name) building.name = name;
+        if (name) {
+          building.name = name;
+          if (way.tags.wikidata) building.wikidata = way.tags.wikidata;
+          if (way.tags.wikipedia) building.wikipedia = way.tags.wikipedia;
+          if (way.tags.description) building.description = way.tags.description;
+          if (way.tags.amenity) building.amenity = way.tags.amenity;
+          if (way.tags.tourism) building.tourism = way.tags.tourism;
+        }
         buildings.set(id, building);
         added++;
       }

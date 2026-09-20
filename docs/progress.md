@@ -8,7 +8,7 @@
 | 2 | Real Chattogram terrain (projection, DEM, coast, water) | mostly (water deferred) | [m2](milestones/m2-terrain.md) |
 | 3 | Real roads (OSM import, intersections, bridges) | done (major roads) | [m3](milestones/m3-roads.md) |
 | 4 | Buildings (footprints, heights, types, LOD) | in progress (spawn district) | [m4](milestones/m4-buildings.md) |
-| 5 | Landmarks (10–20, labels, panel, interaction) | planned | — |
+| 5 | Landmarks (labels, panel, interaction, learning) | done (spawn district) | [m5](milestones/m5-landmarks.md) |
 | 6 | World streaming (chunks, LOD, instancing) | planned | — |
 | 7 | Polish (materials, vegetation, fog, day/night, audio, UI) | planned | — |
 
@@ -28,6 +28,8 @@
 | Water / coastline (OSM polygons) | pending |
 | Buildings (OSM footprints + LOD) | spawn district done; city-wide pending |
 | Named-building world labels | done |
+| Landmark interaction + info panel | done |
+| Wikipedia/Wikidata enrichment | done |
 | Minimap (§55, Canvas2D, names) | done |
 | Vehicles (summon car/bicycle, ride) | done |
 | Footstep audio (synthesized) | done |
