@@ -17,6 +17,7 @@ import { AudioManager } from "@/audio/AudioManager";
 import { VehicleManager } from "@/vehicles/VehicleManager";
 import { Input } from "@/player/Input";
 import { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
+import { OverviewCamera } from "@/camera/OverviewCamera";
 import { HUD } from "@/ui/HUD";
 import { WorldLabels } from "@/ui/WorldLabels";
 import { PostFX } from "@/rendering/PostFX";
@@ -72,6 +73,9 @@ export class Game {
   private beacon?: QuestBeacon;
   private navigation?: Navigation;
   private searchBox?: SearchBox;
+  private overview?: OverviewCamera;
+  private mode: "follow" | "overview" = "follow";
+  private clickStart: { x: number; y: number } | null = null;
   private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
   private postfx: PostFX | undefined;
@@ -81,7 +85,10 @@ export class Game {
   private gpsTracking = false;
   private running = false;
 
-  constructor(canvas: HTMLCanvasElement, hudRoot: HTMLElement) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    hudRoot: HTMLElement,
+  ) {
     this.renderer = new Renderer(canvas);
     this.input = new Input(canvas);
     this.cameraRig = new ThirdPersonCamera(this.renderer.aspect);
@@ -98,6 +105,11 @@ export class Game {
     window.addEventListener("keydown", this.onFirstGesture, { once: true });
 
     this.sceneManager.scene.add(this.lighting.object, this.player.object);
+
+    canvas.addEventListener("pointerdown", (event) => {
+      this.clickStart = { x: event.clientX, y: event.clientY };
+    });
+    canvas.addEventListener("click", this.onCanvasClick);
 
     window.addEventListener("resize", this.onResize);
     this.onResize();
@@ -126,6 +138,7 @@ export class Game {
   async load(): Promise<void> {
     this.heightfield = await TerrainHeightfield.load();
     this.getHeight = createHeightProvider(this.heightfield);
+    this.overview = new OverviewCamera(this.renderer.aspect, this.getHeight);
     this.controller = new PlayerController(
       this.player,
       this.input,
@@ -274,6 +287,7 @@ export class Game {
     const height = window.innerHeight;
     this.renderer.setSize(width, height);
     this.cameraRig.resize(width / height);
+    this.overview?.resize(width / height);
     this.postfx?.setSize(width, height);
   };
 
@@ -297,25 +311,32 @@ export class Game {
     this.pedestrians?.update(delta);
     this.traffic?.update(delta, this.timeOfDay.isNight);
 
-    this.cameraRig.handleInput(this.input);
     this.handleVehicleInput();
 
-    const mounted = this.vehicles?.mounted ?? null;
-    if (mounted) {
-      this.vehicles?.drive(delta, this.input);
-      this.vehicles?.syncRider(this.player);
-      this.player.updateRiding(delta);
-      // Camera is free to orbit while riding (mouse drag / wheel zoom), exactly
-      // like on foot; it only follows the vehicle's position.
-      if (!this.vehicles?.getCameraTarget(this.cameraTarget)) {
+    let activeCamera: THREE.Camera;
+    if (this.mode === "overview" && this.overview) {
+      this.overview.handleInput(this.input);
+      this.overview.update(delta);
+      activeCamera = this.overview.camera;
+    } else {
+      this.cameraRig.handleInput(this.input);
+      const mounted = this.vehicles?.mounted ?? null;
+      if (mounted) {
+        this.vehicles?.drive(delta, this.input);
+        this.vehicles?.syncRider(this.player);
+        this.player.updateRiding(delta);
+        // Camera is free to orbit while riding (mouse drag / wheel zoom), exactly
+        // like on foot; it only follows the vehicle's position.
+        if (!this.vehicles?.getCameraTarget(this.cameraTarget)) {
+          this.player.getCameraTarget(this.cameraTarget);
+        }
+      } else {
+        this.controller.update(delta);
         this.player.getCameraTarget(this.cameraTarget);
       }
-    } else {
-      this.controller.update(delta);
-      this.player.getCameraTarget(this.cameraTarget);
+      this.cameraRig.update(delta, this.cameraTarget);
+      activeCamera = this.cameraRig.camera;
     }
-
-    this.cameraRig.update(delta, this.cameraTarget);
 
     this.landmarks?.update(this.player, this.input);
     this.navigation?.update(delta, this.player);
@@ -327,7 +348,7 @@ export class Game {
     this.beacon?.update(delta);
     const objective = this.quest?.currentLandmark() ?? null;
     this.minimap?.setQuestTarget(objective ? { x: objective.x, z: objective.z } : null);
-    this.labels?.update(this.cameraRig.camera);
+    this.labels?.update(activeCamera);
     this.minimap?.update(this.player);
 
     // Day/night (spec §34): hold T to fast-forward.
@@ -343,12 +364,10 @@ export class Game {
     this.updateSun(this.timeOfDay.getLightDirection());
 
     if (this.postfx) {
-      this.postfx.render(delta, this.sceneManager.scene, this.cameraRig.camera);
+      this.postfx.setCamera(activeCamera);
+      this.postfx.render(delta, this.sceneManager.scene, activeCamera);
     } else {
-      this.renderer.instance.render(
-        this.sceneManager.scene,
-        this.cameraRig.camera,
-      );
+      this.renderer.instance.render(this.sceneManager.scene, activeCamera);
     }
     this.hud.update(delta, this.player);
     this.input.endFrame();
@@ -372,6 +391,7 @@ export class Game {
     if (this.input.wasPressed("KeyG")) this.toggleGpsTracking();
     if (this.input.wasPressed("KeyP")) this.postfx?.toggle();
     if (this.input.wasPressed("KeyU")) this.audio.toggleMute();
+    if (this.input.wasPressed("KeyO")) this.toggleOverview();
     if (this.input.wasPressed("KeyF")) {
       vehicles.toggleMount(this.player);
       const mounted = vehicles.mounted;
@@ -384,6 +404,38 @@ export class Game {
       }
     }
   }
+
+  /** Toggles the detached globe/overview camera. */
+  private toggleOverview(): void {
+    if (!this.overview) return;
+    const entering = this.mode !== "overview";
+    this.mode = entering ? "overview" : "follow";
+    if (entering) {
+      this.overview.snap();
+      this.sceneManager.setFogFar(9000);
+    } else {
+      this.cameraRig.snap();
+      this.sceneManager.setFogFar(3600);
+    }
+  }
+
+  /** In overview, clicking the ground travels there and returns to follow. */
+  private onCanvasClick = (event: MouseEvent): void => {
+    if (this.mode !== "overview" || !this.overview) return;
+    if (
+      this.clickStart &&
+      Math.hypot(event.clientX - this.clickStart.x, event.clientY - this.clickStart.y) > 6
+    ) {
+      return;
+    }
+    const terrain = this.sceneManager.scene.getObjectByName("Terrain");
+    if (!terrain) return;
+    const hit = this.overview.pickGround(event.clientX, event.clientY, this.canvas, terrain);
+    if (!hit) return;
+    this.travelTo(hit[0], hit[1]);
+    this.mode = "follow";
+    this.cameraRig.snap();
+  };
 
   /** Teleports the player to a world position (map click / pin). */
   private travelTo(x: number, z: number): void {

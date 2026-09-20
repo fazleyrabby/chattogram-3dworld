@@ -193,6 +193,32 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0020 — Globe overview camera
+
+**Status:** Accepted
+
+**Decision**
+
+**O** detaches the camera into a "globe overview": it orbits the district centre
+at ~1.25 km, drag rotates, wheel zooms, and **clicking the ground raycasts to the
+terrain, travels the player there, and returns to follow**. Fog is extended
+(9000) while in overview and restored (3600) on exit. The post stack is made
+camera-aware (`PostFX.setCamera`) so the composer follows the active camera.
+
+**Rationale**
+
+Matches the reference's overview/globe mode and makes the small world legible at
+a glance — a "little city" you can spin and jump into. Chosen over turning the
+play space into a literal sphere, which breaks movement and routing.
+
+**Gotcha**
+
+`RenderPass`/`GTAOPass` capture the camera at construction; swapping the render
+camera requires updating them (this is why the first overview attempt rendered
+the follow camera).
+
+---
+
 ## ADR-0018 — Invisible walls (clamp to district)
 
 **Status:** Accepted

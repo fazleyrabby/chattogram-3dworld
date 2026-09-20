@@ -16,6 +16,11 @@ export class SceneManager {
     this.scene.fog = new THREE.Fog(SKY_COLOR, 300, 3600);
   }
 
+  /** Extends or restores the fog distance (e.g. for the globe overview). */
+  setFogFar(far: number): void {
+    if (this.scene.fog instanceof THREE.Fog) this.scene.fog.far = far;
+  }
+
   /** Retints the sky and fog (day/night, spec §34). */
   setSky(color: THREE.Color): void {
     this.sky.copy(color);

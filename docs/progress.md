@@ -47,6 +47,7 @@
 | Search + road routing (Dijkstra) | done |
 | Compact district (world shrunk) + invisible walls | done |
 | Real ambience recording (subtle) | done |
+| Globe overview camera (click to travel) | done |
 | Device geolocation spawn + tracking | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |

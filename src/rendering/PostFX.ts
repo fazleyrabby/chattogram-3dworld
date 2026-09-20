@@ -86,6 +86,7 @@ const GradeShader = {
  */
 export class PostFX {
   private readonly composer: EffectComposer;
+  private readonly renderPass: RenderPass;
   private readonly gtao: GTAOPass;
   private readonly bloom: UnrealBloomPass;
 
@@ -101,7 +102,8 @@ export class PostFX {
       samples: 4,
     });
     this.composer = new EffectComposer(renderer, target);
-    this.composer.addPass(new RenderPass(scene, camera));
+    this.renderPass = new RenderPass(scene, camera);
+    this.composer.addPass(this.renderPass);
 
     this.gtao = new GTAOPass(scene, camera, width, height);
     this.gtao.output = GTAOPass.OUTPUT.Default;
@@ -117,6 +119,13 @@ export class PostFX {
   }
 
   private enabled = true;
+
+  /** Points the whole stack at a different camera (follow <-> globe overview). */
+  setCamera(camera: THREE.Camera): void {
+    if (this.renderPass.camera === camera && this.gtao.camera === camera) return;
+    this.renderPass.camera = camera;
+    this.gtao.camera = camera;
+  }
 
   setSize(width: number, height: number): void {
     this.composer.setSize(width, height);
