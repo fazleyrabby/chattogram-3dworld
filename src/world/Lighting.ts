@@ -26,8 +26,8 @@ export class Lighting {
     sun.shadow.camera.near = 10;
     sun.shadow.camera.far = 6000;
     // normalBias removes shadow acne on large, low-resolution shadow maps.
-    sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 1.5;
+    sun.shadow.bias = -0.0005;
+    sun.shadow.normalBias = 2.5;
 
     const extent = Math.min(sceneSize / 4, 1200);
     const cam = sun.shadow.camera as THREE.OrthographicCamera;
@@ -49,10 +49,13 @@ export class Lighting {
     color: THREE.Color,
     intensity: number,
     ambientIntensity: number,
+    castShadow: boolean,
   ): void {
     this.sun.color.copy(color);
     this.sun.intensity = intensity;
-    this.sun.castShadow = intensity > 0.05;
+    // A near-horizontal sun produces extreme shadow acne; only cast shadows
+    // while the key light is reasonably high.
+    this.sun.castShadow = castShadow;
     this.hemisphere.intensity = ambientIntensity;
   }
 }

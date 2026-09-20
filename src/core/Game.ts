@@ -357,6 +357,7 @@ export class Game {
       this.timeOfDay.lightColor,
       this.timeOfDay.sunIntensity,
       this.timeOfDay.ambientIntensity,
+      this.timeOfDay.sunHeight > 0.2,
     );
     this.sceneManager.setSky(this.timeOfDay.skyColor);
     this.hud.setClock(this.timeOfDay.label);

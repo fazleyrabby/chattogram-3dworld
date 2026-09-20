@@ -50,7 +50,7 @@ export class LandmarkDetails {
       if (ring.length < 3) continue;
 
       const ground = ring.map(([x, z]) => getHeight(x, z));
-      const baseLevel = Math.min(...ground);
+      const baseLevel = Math.max(...ground);
       const topLevel = baseLevel + data.height;
       const centroid = ringCentroid(ring);
       const size = footprintSize(ring);

@@ -103,11 +103,11 @@ export class Buildings {
       const ring = building.ring;
       if (ring.length < 3) continue;
 
-      // Wall bottoms follow the terrain (so nothing floats), but the roofline is
-      // level at the lowest ground point + height, so walls stay vertical and
-      // roofs are flat rather than sheared along the slope.
+      // Wall bottoms follow the terrain (nothing floats) and the roofline is
+      // level. Level it at the HIGHEST ground under the footprint — using the
+      // lowest buried the uphill side, making sloped buildings look squashed.
       const base = ring.map(([x, z]) => getHeight(x, z));
-      const topLevel = Math.min(...base) + building.height;
+      const topLevel = Math.max(...base) + building.height;
       const top = base.map(() => topLevel);
       const centroid = ringCentroid(ring);
       const hash = hashString(building.id);

@@ -82,13 +82,13 @@ export class TimeOfDay {
 
   /** Smooth twilight falloff so sunset isn't an abrupt cliff. */
   get sunIntensity(): number {
-    const daylight = smoothstep(-0.05, 0.35, this.sunHeight) * 2.4;
-    return this.isNight ? 0.32 : daylight;
+    const daylight = smoothstep(-0.08, 0.35, this.sunHeight) * 2.4;
+    return this.isNight ? 0.45 : daylight;
   }
 
   get ambientIntensity(): number {
     // Night keeps a navigable floor; day rises smoothly.
-    return 0.38 + smoothstep(-0.2, 0.35, this.sunHeight) * 0.52;
+    return 0.48 + smoothstep(-0.2, 0.35, this.sunHeight) * 0.42;
   }
 
   /** "HH:MM" for the HUD. */
