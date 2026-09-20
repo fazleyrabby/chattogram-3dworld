@@ -10,7 +10,7 @@
 | 4 | Buildings (footprints, heights, types, LOD) | in progress (spawn district) | [m4](milestones/m4-buildings.md) |
 | 5 | Landmarks (labels, panel, interaction, learning) | done (spawn district) | [m5](milestones/m5-landmarks.md) |
 | 6 | World streaming (chunks, LOD, instancing) | planned | — |
-| 7 | Polish (materials, vegetation, fog, day/night, audio, UI) | planned | — |
+| 7 | Polish (materials, vegetation, fog, day/night, audio, UI) | in progress (day/night, geolocation) | [m7](milestones/m7-polish.md) |
 
 ## Cross-cutting
 
@@ -32,6 +32,8 @@
 | Wikipedia/Wikidata enrichment | done |
 | Minimap (§55, Canvas2D, names) | done |
 | Vehicles (summon car/bicycle, ride) | done |
+| Day/night cycle | done |
+| Device geolocation spawn + tracking | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |
 

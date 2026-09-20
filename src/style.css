@@ -74,6 +74,15 @@ body,
   line-height: 0;
 }
 
+.hud__gps {
+  position: absolute;
+  top: 58px;
+  left: 18px;
+  font-size: 11px;
+  color: #9fe0b4;
+  opacity: 0.9;
+}
+
 .hud__prompt {
   position: absolute;
   left: 50%;

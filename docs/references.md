@@ -148,6 +148,12 @@ Generator scripts (see `package.json`): `world:dem`, `world:roads`.
   `JointLegL`, `JointLegR`. Animated in `src/player/GltfAvatar.ts`.
 - Blender MCP — `127.0.0.1:9876` (Blender 5.2.1 LTS).
 
+## Browser APIs
+
+- Geolocation API — https://developer.mozilla.org/docs/Web/API/Geolocation_API
+  (requires a secure context; used for the spawn + live tracking).
+- Web Audio API — https://developer.mozilla.org/docs/Web/API/Web_Audio_API
+
 ## Audio
 
 - Footsteps — synthesized in `src/audio/AudioManager.ts` (filtered noise + envelope).

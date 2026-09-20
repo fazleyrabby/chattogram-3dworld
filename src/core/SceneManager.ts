@@ -8,9 +8,20 @@ const SKY_COLOR = 0x9fc4e8;
 export class SceneManager {
   readonly scene: THREE.Scene;
 
+  private readonly sky = new THREE.Color(SKY_COLOR);
+
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(SKY_COLOR);
+    this.scene.background = this.sky;
     this.scene.fog = new THREE.Fog(SKY_COLOR, 1200, 22000);
+  }
+
+  /** Retints the sky and fog (day/night, spec §34). */
+  setSky(color: THREE.Color): void {
+    this.sky.copy(color);
+    this.scene.background = this.sky;
+    if (this.scene.fog instanceof THREE.Fog) {
+      this.scene.fog.color.copy(color);
+    }
   }
 }

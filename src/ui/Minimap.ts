@@ -28,6 +28,7 @@ export class Minimap {
   private readonly named: NamedBuilding[];
 
   private visible = true;
+  private gps: { x: number; z: number } | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -133,6 +134,11 @@ export class Minimap {
     return canvas;
   }
 
+  /** Shows the device's real position marker on the map. */
+  setGps(point: { x: number; z: number } | null): void {
+    this.gps = point;
+  }
+
   get isVisible(): boolean {
     return this.visible;
   }
@@ -176,6 +182,24 @@ export class Minimap {
       ctx.fillRect(dx + 4, dy - 7, w + 8, 14);
       ctx.fillStyle = "#f4f7fa";
       ctx.fillText(label, dx + 8, dy + 0.5);
+    }
+
+    // Device GPS marker
+    if (this.gps) {
+      const [gx, gy] = this.toStatic(this.gps.x, this.gps.z);
+      const dx = (gx - sx) * this.scale;
+      const dy = (gy - sy) * this.scale;
+      if (dx >= 0 && dy >= 0 && dx <= SIZE && dy <= SIZE) {
+        ctx.strokeStyle = "#1f9d55";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = "#2ecc71";
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // Player arrow (facing +Z is forward; screen y is inverted)

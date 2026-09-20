@@ -185,6 +185,49 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0011 — Day/night is a single time value
+
+**Status:** Accepted
+
+**Decision**
+
+One hour value in `TimeOfDay` drives sun direction, sky/fog color, light color
+and intensity. No astronomical simulation. Night uses a cool low-intensity key
+light (moon) in the opposite direction plus an ambient floor, so it stays
+navigable.
+
+**Rationale**
+
+Spec §34 asks for a simple time-of-day, not an ephemeris. Keeping every value
+derived from one number makes the cycle trivial to tune and test (set
+`timeOfDay.hours`).
+
+---
+
+## ADR-0012 — Device geolocation drives the spawn
+
+**Status:** Accepted
+
+**Decision**
+
+On load, request the device position (browser Geolocation API). If it is inside
+`WORLD_CONFIG.bounds`, spawn the player there and mark it on the minimap;
+otherwise fall back to the configured spawn. **L** re-requests, **G** toggles
+live tracking (`watchPosition`).
+
+**Rationale**
+
+"Start from my own location" is a natural fit for a real-geography world.
+Falls back gracefully when permission is denied or the device is outside
+Chattogram. Requires a secure context (localhost/HTTPS).
+
+**Notes**
+
+The initial request is non-blocking: the default spawn happens first, then the
+player is moved to the device location if available.
+
+---
+
 ## ADR-0010 — Summonable vehicles (stretch feature)
 
 **Status:** Accepted

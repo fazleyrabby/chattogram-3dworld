@@ -9,6 +9,8 @@ export class HUD {
   private readonly fpsEl: HTMLSpanElement;
   private readonly coordEl: HTMLSpanElement;
   private readonly promptEl: HTMLDivElement;
+  private readonly clockEl: HTMLSpanElement;
+  private readonly gpsEl: HTMLDivElement;
   private fpsAccum = 0;
   private fpsFrames = 0;
 
@@ -17,19 +19,37 @@ export class HUD {
       <div class="hud__title">CHATTAGRAM</div>
       <div class="hud__stats">
         <span data-fps>--</span> FPS &middot;
-        <span data-coord>--</span>
+        <span data-coord>--</span> &middot;
+        <span data-clock>--:--</span>
       </div>
+      <div class="hud__gps" data-gps hidden></div>
       <div class="hud__prompt" hidden></div>
       <div class="hud__controls">
         WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
         Riding: W Accelerate &middot; S Brake / Reverse &middot; A/D Steer &middot; Space Handbrake<br />
-        E Explore landmark &middot; C Car &middot; B Bicycle &middot; F Ride / Dismount &middot; M Minimap
+        E Explore &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Minimap &middot; T Fast-forward time &middot; L My location &middot; G GPS track
       </div>
     `;
 
     this.fpsEl = root.querySelector("[data-fps]") as HTMLSpanElement;
     this.coordEl = root.querySelector("[data-coord]") as HTMLSpanElement;
     this.promptEl = root.querySelector(".hud__prompt") as HTMLDivElement;
+    this.clockEl = root.querySelector("[data-clock]") as HTMLSpanElement;
+    this.gpsEl = root.querySelector("[data-gps]") as HTMLDivElement;
+  }
+
+  setClock(label: string): void {
+    if (this.clockEl.textContent !== label) this.clockEl.textContent = label;
+  }
+
+  /** Shows a GPS status line, or hides it when null. */
+  setGps(text: string | null): void {
+    if (!text) {
+      if (!this.gpsEl.hidden) this.gpsEl.hidden = true;
+      return;
+    }
+    if (this.gpsEl.textContent !== text) this.gpsEl.textContent = text;
+    if (this.gpsEl.hidden) this.gpsEl.hidden = false;
   }
 
   /** Shows or hides the contextual interaction prompt (spec §56). */

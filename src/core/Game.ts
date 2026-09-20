@@ -18,6 +18,14 @@ import { WorldLabels } from "@/ui/WorldLabels";
 import { Minimap } from "@/ui/Minimap";
 import { LandmarkPanel } from "@/ui/LandmarkPanel";
 import { LandmarkManager } from "@/landmarks/LandmarkManager";
+import { TimeOfDay } from "@/world/TimeOfDay";
+import {
+  clearLocationWatch,
+  getCurrentLocation,
+  insideWorldBounds,
+  watchLocation,
+  type DeviceLocation,
+} from "@/geography/Geolocation";
 import { WORLD_CONFIG } from "@/config/WorldConfig";
 import { geoToLocal } from "@/geography/Projection";
 import { createHeightProvider, type HeightProvider } from "@/geography/WorldHeight";
@@ -48,6 +56,9 @@ export class Game {
   private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
   private readonly audio = new AudioManager();
+  private readonly timeOfDay = new TimeOfDay();
+  private gpsWatchId: number | null = null;
+  private gpsTracking = false;
   private running = false;
 
   constructor(canvas: HTMLCanvasElement, hudRoot: HTMLElement) {
@@ -103,6 +114,9 @@ export class Game {
     this.sceneManager.scene.add(terrain.object, roads.object, buildings.object);
 
     this.spawnPlayer();
+
+    // Try to start the player at the device's real location (spec §54 extension).
+    void this.startAtDeviceLocation();
   }
 
   private async loadAvatar(): Promise<void> {
@@ -112,6 +126,52 @@ export class Game {
     } catch (error) {
       console.warn("[avatar] GLB unavailable; using procedural avatar.", error);
     }
+  }
+
+  /** Requests the device location and spawns/marks it if inside the world. */
+  private async startAtDeviceLocation(): Promise<void> {
+    const location = await getCurrentLocation(8000);
+    if (!location) {
+      this.hud.setGps("GPS unavailable — press L to retry");
+      return;
+    }
+    this.applyDeviceLocation(location);
+  }
+
+  private applyDeviceLocation(location: DeviceLocation): void {
+    const inside = insideWorldBounds(location.latitude, location.longitude);
+    const coords = `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+    const local = geoToLocal({ latitude: location.latitude, longitude: location.longitude });
+    this.minimap?.setGps(local);
+
+    if (!inside) {
+      this.hud.setGps(`GPS ${coords} · outside Chattogram map`);
+      return;
+    }
+
+    this.player.position.set(local.x, this.getHeight(local.x, local.z), local.z);
+    this.player.velocity.set(0, 0, 0);
+    this.player.sync();
+    this.hud.setGps(`GPS ${coords}${this.gpsTracking ? " · live" : ""}`);
+  }
+
+  private toggleGpsTracking(): void {
+    if (this.gpsTracking) {
+      if (this.gpsWatchId !== null) clearLocationWatch(this.gpsWatchId);
+      this.gpsWatchId = null;
+      this.gpsTracking = false;
+      this.hud.setGps("GPS tracking off");
+      return;
+    }
+
+    const id = watchLocation((location) => this.applyDeviceLocation(location));
+    if (id === null) {
+      this.hud.setGps("GPS unavailable");
+      return;
+    }
+    this.gpsWatchId = id;
+    this.gpsTracking = true;
+    this.hud.setGps("GPS tracking on");
   }
 
   private spawnPlayer(): void {
@@ -171,7 +231,17 @@ export class Game {
     this.landmarks?.update(this.player, this.input);
     this.labels?.update(this.cameraRig.camera);
     this.minimap?.update(this.player);
-    this.updateSun();
+
+    // Day/night (spec §34): hold T to fast-forward.
+    this.timeOfDay.update(delta, this.input.isDown("KeyT"));
+    this.lighting.applyTimeOfDay(
+      this.timeOfDay.lightColor,
+      this.timeOfDay.sunIntensity,
+      this.timeOfDay.ambientIntensity,
+    );
+    this.sceneManager.setSky(this.timeOfDay.skyColor);
+    this.hud.setClock(this.timeOfDay.label);
+    this.updateSun(this.timeOfDay.getLightDirection());
     this.renderer.instance.render(
       this.sceneManager.scene,
       this.cameraRig.camera,
@@ -187,6 +257,8 @@ export class Game {
     if (this.input.wasPressed("KeyC")) vehicles.summon("car", this.player);
     if (this.input.wasPressed("KeyB")) vehicles.summon("bicycle", this.player);
     if (this.input.wasPressed("KeyM")) this.minimap?.toggle();
+    if (this.input.wasPressed("KeyL")) void this.startAtDeviceLocation();
+    if (this.input.wasPressed("KeyG")) this.toggleGpsTracking();
     if (this.input.wasPressed("KeyF")) {
       vehicles.toggleMount(this.player);
       const mounted = vehicles.mounted;
@@ -200,15 +272,20 @@ export class Game {
     }
   }
 
-  private updateSun(): void {
+  private updateSun(direction: THREE.Vector3): void {
     const p = this.player.position;
     // Snap the shadow frustum to the shadow-map texel grid. Without this the
     // moving shadow camera re-samples the map every frame and edges shimmer.
     const texel = this.lighting.shadowTexel;
     const sx = Math.round(p.x / texel) * texel;
     const sz = Math.round(p.z / texel) * texel;
+    const distance = 2500;
 
-    this.lighting.sun.position.set(sx + 1200, p.y + 1800, sz + 900);
+    this.lighting.sun.position.set(
+      sx + direction.x * distance,
+      p.y + direction.y * distance,
+      sz + direction.z * distance,
+    );
     this.lighting.sun.target.position.set(sx, p.y, sz);
     this.lighting.sun.target.updateMatrixWorld();
   }

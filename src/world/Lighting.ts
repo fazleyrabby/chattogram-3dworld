@@ -7,6 +7,7 @@ import * as THREE from "three";
 export class Lighting {
   readonly object: THREE.Group;
   readonly sun: THREE.DirectionalLight;
+  readonly hemisphere: THREE.HemisphereLight;
   /** World size of one shadow-map texel; used to snap the sun and avoid shimmer. */
   readonly shadowTexel: number;
 
@@ -15,6 +16,7 @@ export class Lighting {
     this.object.name = "Lighting";
 
     const hemisphere = new THREE.HemisphereLight(0xbfd8ff, 0x4a5a3a, 0.9);
+    this.hemisphere = hemisphere;
     this.object.add(hemisphere);
 
     const sun = new THREE.DirectionalLight(0xfff3e0, 2.2);
@@ -40,5 +42,17 @@ export class Lighting {
     this.sun = sun;
     this.object.add(sun);
     this.object.add(sun.target);
+  }
+
+  /** Applies time-of-day lighting values (spec §34). */
+  applyTimeOfDay(
+    color: THREE.Color,
+    intensity: number,
+    ambientIntensity: number,
+  ): void {
+    this.sun.color.copy(color);
+    this.sun.intensity = intensity;
+    this.sun.castShadow = intensity > 0.05;
+    this.hemisphere.intensity = ambientIntensity;
   }
 }
