@@ -44,6 +44,7 @@ export class Minimap {
   private visible = true;
   private large = false;
   private gps: { x: number; z: number } | null = null;
+  private questTarget: { x: number; z: number } | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -177,6 +178,11 @@ export class Minimap {
     this.gps = point;
   }
 
+  /** Highlights the current quest objective. */
+  setQuestTarget(point: { x: number; z: number } | null): void {
+    this.questTarget = point;
+  }
+
   get isVisible(): boolean {
     return this.visible;
   }
@@ -250,6 +256,24 @@ export class Minimap {
         ctx.fillStyle = "#2ecc71";
         ctx.beginPath();
         ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Quest objective marker.
+    if (this.questTarget) {
+      const [qx, qy] = this.toStatic(this.questTarget.x, this.questTarget.z);
+      const dx = (qx - sx) * this.scale;
+      const dy = (qy - sy) * this.scale;
+      if (dx >= 0 && dy >= 0 && dx <= size && dy <= size) {
+        ctx.strokeStyle = "#ffd54a";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = "#ffd54a";
+        ctx.beginPath();
+        ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
         ctx.fill();
       }
     }

@@ -24,6 +24,10 @@ import { Minimap } from "@/ui/Minimap";
 import { LandmarkPanel } from "@/ui/LandmarkPanel";
 import { LandmarkManager } from "@/landmarks/LandmarkManager";
 import { TimeOfDay } from "@/world/TimeOfDay";
+import { QuestBeacon } from "@/world/QuestBeacon";
+import { QuestManager } from "@/quests/QuestManager";
+import { CHEARGI_WALK } from "@/quests/quest";
+import { Notebook } from "@/ui/Notebook";
 import {
   clearLocationWatch,
   getCurrentLocation,
@@ -60,6 +64,9 @@ export class Game {
   private minimap?: Minimap;
   private pedestrians?: Pedestrians;
   private traffic?: Traffic;
+  private quest?: QuestManager;
+  private notebook?: Notebook;
+  private beacon?: QuestBeacon;
   private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
   private postfx: PostFX | undefined;
@@ -139,8 +146,25 @@ export class Game {
       this.traffic.object,
     );
 
+    // Quest + discovery (spec §75).
+    const beacon = new QuestBeacon(this.getHeight);
+    this.beacon = beacon;
+    this.sceneManager.scene.add(beacon.object);
+    this.notebook = new Notebook(document.body, buildings.named.length, (name) =>
+      this.landmarks?.selectByName(name),
+    );
+    this.quest = new QuestManager(CHEARGI_WALK, buildings.named, this.hud, beacon);
+
     const landmarkPanel = new LandmarkPanel(document.body);
-    this.landmarks = new LandmarkManager(buildings.named, landmarkPanel, this.hud);
+    this.landmarks = new LandmarkManager(
+      buildings.named,
+      landmarkPanel,
+      this.hud,
+      (landmark) => {
+        this.notebook?.add(landmark);
+        this.quest?.notifyDiscovered(landmark.name);
+      },
+    );
     this.labels = new WorldLabels(buildings.named, this.getHeight, (name) =>
       this.landmarks?.selectByName(name),
     );
@@ -276,6 +300,10 @@ export class Game {
     this.cameraRig.update(delta, this.cameraTarget);
 
     this.landmarks?.update(this.player, this.input);
+    this.quest?.update();
+    this.beacon?.update(delta);
+    const objective = this.quest?.currentLandmark() ?? null;
+    this.minimap?.setQuestTarget(objective ? { x: objective.x, z: objective.z } : null);
     this.labels?.update(this.cameraRig.camera);
     this.minimap?.update(this.player);
 
@@ -311,6 +339,7 @@ export class Game {
     if (this.input.wasPressed("KeyB")) vehicles.summon("bicycle", this.player);
     if (this.input.wasPressed("KeyM")) this.minimap?.toggle();
     if (this.input.wasPressed("KeyN")) this.minimap?.toggleLarge();
+    if (this.input.wasPressed("KeyH")) this.notebook?.toggle();
     if (this.input.wasPressed("KeyL")) void this.startAtDeviceLocation();
     if (this.input.wasPressed("KeyG")) this.toggleGpsTracking();
     if (this.input.wasPressed("KeyP")) this.postfx?.toggle();

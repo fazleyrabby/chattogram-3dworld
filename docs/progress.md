@@ -10,7 +10,8 @@
 | 4 | Buildings (footprints, heights, types, LOD) | in progress (spawn district) | [m4](milestones/m4-buildings.md) |
 | 5 | Landmarks (labels, panel, interaction, learning) | done (spawn district) | [m5](milestones/m5-landmarks.md) |
 | 6 | World streaming (chunks, LOD, instancing) | planned | — |
-| 7 | Polish (materials, vegetation, fog, day/night, audio, UI) | in progress (day/night, geolocation) | [m7](milestones/m7-polish.md) |
+| 7 | Polish (materials, vegetation, fog, day/night, audio, UI) | in progress | [m7](milestones/m7-polish.md) |
+| 8 | Quests & History Notebook | done (first quest) | [m8](milestones/m8-quests.md) |
 
 ## Cross-cutting
 
@@ -42,6 +43,7 @@
 | City ambience audio (hum, horns, birds) | done |
 | Post-processing (GTAO, bloom, SMAA, tilt-shift) | done |
 | Interactive map (click-to-travel, big map) | done |
+| Quest + History Notebook | done (first quest) |
 | Device geolocation spawn + tracking | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |

@@ -11,6 +11,10 @@ export class HUD {
   private readonly promptEl: HTMLDivElement;
   private readonly clockEl: HTMLSpanElement;
   private readonly gpsEl: HTMLDivElement;
+  private readonly questEl: HTMLDivElement;
+  private readonly questTitleEl: HTMLElement;
+  private readonly questObjectiveEl: HTMLElement;
+  private readonly questProgressEl: HTMLElement;
   private fpsAccum = 0;
   private fpsFrames = 0;
 
@@ -24,10 +28,15 @@ export class HUD {
       </div>
       <div class="hud__gps" data-gps hidden></div>
       <div class="hud__prompt" hidden></div>
+      <div class="hud__quest" hidden>
+        <div class="hud__quest-title" data-quest-title></div>
+        <div class="hud__quest-objective" data-quest-objective></div>
+        <div class="hud__quest-progress" data-quest-progress></div>
+      </div>
       <div class="hud__controls">
         WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
         Riding: W Accelerate &middot; S Brake / Reverse &middot; A/D Steer &middot; Space Handbrake<br />
-        E Explore &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Minimap &middot; N Big map (click to travel) &middot; T Time &middot; L Locate &middot; G GPS &middot; P Post-FX
+        E Explore &middot; H Notebook &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Minimap &middot; N Big map (click to travel) &middot; T Time &middot; L Locate &middot; G GPS &middot; P Post-FX
       </div>
     `;
 
@@ -36,6 +45,20 @@ export class HUD {
     this.promptEl = root.querySelector(".hud__prompt") as HTMLDivElement;
     this.clockEl = root.querySelector("[data-clock]") as HTMLSpanElement;
     this.gpsEl = root.querySelector("[data-gps]") as HTMLDivElement;
+    this.questEl = root.querySelector(".hud__quest") as HTMLDivElement;
+    this.questTitleEl = root.querySelector("[data-quest-title]") as HTMLElement;
+    this.questObjectiveEl = root.querySelector("[data-quest-objective]") as HTMLElement;
+    this.questProgressEl = root.querySelector("[data-quest-progress]") as HTMLElement;
+  }
+
+  /** Quest tracker (spec §75). `objective` null means the quest is complete. */
+  setQuest(title: string, objective: string | null, done: number, total: number): void {
+    this.questEl.hidden = false;
+    this.questTitleEl.textContent = title;
+    this.questObjectiveEl.textContent = objective
+      ? `Next: ${objective}`
+      : "All stops discovered — route complete!";
+    this.questProgressEl.textContent = `${done} / ${total}`;
   }
 
   setClock(label: string): void {

@@ -185,6 +185,26 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0017 — Discovery-driven quests
+
+**Status:** Accepted
+
+**Decision**
+
+Quests are ordered lists of landmark names. **Discovery** (walking within 34 m of
+a named building, handled in `LandmarkManager`) records the place in the notebook
+and completes it if it is a quest stop — no separate "accept quest" step and no
+per-frame distance checks scattered elsewhere. One world beacon, a HUD tracker
+and a minimap marker render the single current objective.
+
+**Rationale**
+
+Simplest system that yields the Jalan KL experience: reaching a place *is* the
+action. Keeps quest state in one place and reuses the existing named-building
+data. Easy to extend to multiple quests and story tabs.
+
+---
+
 ## ADR-0016 — Map is interactive (click to travel)
 
 **Status:** Accepted

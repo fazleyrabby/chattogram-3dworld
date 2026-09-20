@@ -5,6 +5,7 @@ import type { HUD } from "@/ui/HUD";
 import type { LandmarkPanel } from "@/ui/LandmarkPanel";
 
 const INTERACT_RANGE = 22;
+const DISCOVER_RANGE = 34;
 
 /**
  * Proximity interaction for landmarks (spec §31).
@@ -13,10 +14,13 @@ const INTERACT_RANGE = 22;
  * panel on E or from a label click, and closes it on Escape.
  */
 export class LandmarkManager {
+  private readonly discovered = new Set<string>();
+
   constructor(
     private readonly landmarks: NamedBuilding[],
     private readonly panel: LandmarkPanel,
     private readonly hud: HUD,
+    private readonly onDiscover?: (landmark: NamedBuilding) => void,
   ) {}
 
   update(player: Player, input: Input): void {
@@ -26,6 +30,13 @@ export class LandmarkManager {
       const dx = landmark.x - player.position.x;
       const dz = landmark.z - player.position.z;
       const distance = Math.hypot(dx, dz);
+
+      // Discovery: reaching a landmark records it (notebook + quest).
+      if (distance < DISCOVER_RANGE && !this.discovered.has(landmark.id)) {
+        this.discovered.add(landmark.id);
+        this.onDiscover?.(landmark);
+      }
+
       if (distance < bestDistance) {
         best = landmark;
         bestDistance = distance;
