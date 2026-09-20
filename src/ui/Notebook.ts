@@ -40,6 +40,13 @@ export class Notebook {
     (this.root.querySelector(".notebook__close") as HTMLButtonElement).addEventListener("click", () =>
       this.close(),
     );
+
+    // Click outside closes it.
+    document.addEventListener("pointerdown", (event) => {
+      if (this.opened && event.target instanceof Node && !this.root.contains(event.target)) {
+        this.close();
+      }
+    });
   }
 
   get isOpen(): boolean {

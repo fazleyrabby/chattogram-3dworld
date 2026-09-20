@@ -3,6 +3,7 @@ import type { Input } from "@/player/Input";
 import type { Player } from "@/player/Player";
 import type { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
 import type { HeightProvider } from "@/geography/WorldHeight";
+import { clampToWorld } from "@/geography/Projection";
 
 const WALK_SPEED = 4.5;
 const RUN_SPEED = 9;
@@ -76,6 +77,11 @@ export class PlayerController {
   }
 
   private resolveGround(): void {
+    // Invisible walls: keep the player inside the small district.
+    const [cx, cz] = clampToWorld(this.player.position.x, this.player.position.z, 120);
+    this.player.position.x = cx;
+    this.player.position.z = cz;
+
     const groundY = this.getHeight(this.player.position.x, this.player.position.z);
 
     if (this.player.position.y <= groundY + GROUND_EPSILON) {

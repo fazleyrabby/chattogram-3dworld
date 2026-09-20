@@ -39,18 +39,18 @@ export interface WorldConfig {
 export const WORLD_CONFIG: WorldConfig = {
   city: "Chattogram",
   country: "Bangladesh",
-  // Chittagong CITY only (spec §3) — not the wider district/region. Covers the
-  // urban area across the Karnaphuli down toward Patenga. Scope decision:
-  // ADR-0007.
+  // Compact playable district around Cheragi Pahar (ADR-0007, revised): a small
+  // world is easier to roam and mirrors a "little city" game. The district
+  // contains the buildings dataset plus a green margin.
   bounds: {
-    north: 22.42,
-    south: 22.24,
-    east: 91.9,
-    west: 91.74,
+    north: 22.355,
+    south: 22.333,
+    east: 91.845,
+    west: 91.823,
   },
   origin: {
-    latitude: 22.33,
-    longitude: 91.82,
+    latitude: 22.344,
+    longitude: 91.834,
   },
   spawn: {
     latitude: 22.3437,

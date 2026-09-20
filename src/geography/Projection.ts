@@ -29,6 +29,44 @@ export function geoToLocal(coord: GeoCoordinate): LocalPoint {
   };
 }
 
+export interface LocalBounds {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+let cachedBounds: LocalBounds | null = null;
+
+/** World-local bounds of the playable district. */
+export function localWorldBounds(): LocalBounds {
+  if (cachedBounds) return cachedBounds;
+  const sw = geoToLocal({
+    latitude: WORLD_CONFIG.bounds.south,
+    longitude: WORLD_CONFIG.bounds.west,
+  });
+  const ne = geoToLocal({
+    latitude: WORLD_CONFIG.bounds.north,
+    longitude: WORLD_CONFIG.bounds.east,
+  });
+  cachedBounds = {
+    minX: Math.min(sw.x, ne.x),
+    maxX: Math.max(sw.x, ne.x),
+    minZ: Math.min(sw.z, ne.z),
+    maxZ: Math.max(sw.z, ne.z),
+  };
+  return cachedBounds;
+}
+
+/** Keeps a position inside the district (with an optional inset margin). */
+export function clampToWorld(x: number, z: number, margin = 0): [number, number] {
+  const b = localWorldBounds();
+  return [
+    Math.max(b.minX + margin, Math.min(b.maxX - margin, x)),
+    Math.max(b.minZ + margin, Math.min(b.maxZ - margin, z)),
+  ];
+}
+
 export function localToGeo(point: LocalPoint): GeoCoordinate {
   const lonScale = metersPerDegreeLon(WORLD_CONFIG.origin.latitude);
   return {

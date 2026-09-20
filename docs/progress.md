@@ -44,6 +44,9 @@
 | Post-processing (GTAO, bloom, SMAA, tilt-shift) | done |
 | Interactive map (click-to-travel, big map) | done |
 | Quest + History Notebook | done (first quest) |
+| Search + road routing (Dijkstra) | done |
+| Compact district (world shrunk) + invisible walls | done |
+| Real ambience recording (subtle) | done |
 | Device geolocation spawn + tracking | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |

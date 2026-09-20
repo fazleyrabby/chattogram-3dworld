@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { HeightProvider } from "@/geography/WorldHeight";
+import { clampToWorld } from "@/geography/Projection";
 
 export type VehicleKind = "car" | "bicycle";
 
@@ -103,8 +104,7 @@ export class Vehicle {
 
     const dx = Math.sin(this.heading) * this.speed * delta;
     const dz = Math.cos(this.heading) * this.speed * delta;
-    const nextX = this.position.x + dx;
-    const nextZ = this.position.z + dz;
+    const [nextX, nextZ] = clampToWorld(this.position.x + dx, this.position.z + dz, 110);
     this.position.set(nextX, getHeight(nextX, nextZ), nextZ);
 
     const wheelSpin = (this.speed / 0.33) * delta;

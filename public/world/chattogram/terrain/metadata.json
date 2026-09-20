@@ -2,26 +2,26 @@
   "city": "Chattogram",
   "country": "Bangladesh",
   "bounds": {
-    "north": 22.42,
-    "south": 22.24,
-    "east": 91.9,
-    "west": 91.74
+    "north": 22.355,
+    "south": 22.333,
+    "east": 91.845,
+    "west": 91.823
   },
   "origin": {
-    "latitude": 22.33,
-    "longitude": 91.82
+    "latitude": 22.344,
+    "longitude": 91.834
   },
-  "width": 549,
-  "height": 668,
+  "width": 76,
+  "height": 82,
   "spacingMeters": 30,
   "layout": "row-major, north-to-south rows, west-to-east columns",
   "encoding": "float32le",
   "noData": -32767,
   "elevation": {
-    "min": -0.95,
-    "max": 543.1
+    "min": -0.8,
+    "max": 455.68
   },
   "source": "Copernicus DEM GLO-30",
   "attribution": "© DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
-  "generatedAt": "2026-09-20T15:53:30.420Z"
+  "generatedAt": "2026-09-20T17:51:58.723Z"
 }

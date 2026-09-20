@@ -23,7 +23,7 @@ export class ThirdPersonCamera {
   private initialized = false;
 
   constructor(aspect: number, private readonly rotateSpeed = 0.005) {
-    this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 60000);
+    this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 12000);
   }
 
   handleInput(input: Input): void {

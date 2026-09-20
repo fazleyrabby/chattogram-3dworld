@@ -11,6 +11,7 @@ export class HUD {
   private readonly promptEl: HTMLDivElement;
   private readonly clockEl: HTMLSpanElement;
   private readonly gpsEl: HTMLDivElement;
+  private readonly destinationEl: HTMLDivElement;
   private readonly questEl: HTMLDivElement;
   private readonly questTitleEl: HTMLElement;
   private readonly questObjectiveEl: HTMLElement;
@@ -27,6 +28,7 @@ export class HUD {
         <span data-clock>--:--</span>
       </div>
       <div class="hud__gps" data-gps hidden></div>
+      <div class="hud__destination" data-destination hidden></div>
       <div class="hud__prompt" hidden></div>
       <div class="hud__quest" hidden>
         <div class="hud__quest-title" data-quest-title></div>
@@ -36,7 +38,7 @@ export class HUD {
       <div class="hud__controls">
         WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
         Riding: W Accelerate &middot; S Brake / Reverse &middot; A/D Steer &middot; Space Handbrake<br />
-        E Explore &middot; H Notebook &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Minimap &middot; N Big map (click to travel) &middot; T Time &middot; L Locate &middot; G GPS &middot; P Post-FX
+        E Explore &middot; / Search route &middot; H Notebook &middot; C Car &middot; B Bicycle &middot; F Ride &middot; M Map &middot; N Big map &middot; T Time &middot; L Locate &middot; G GPS &middot; P Post-FX &middot; U Mute
       </div>
     `;
 
@@ -45,10 +47,21 @@ export class HUD {
     this.promptEl = root.querySelector(".hud__prompt") as HTMLDivElement;
     this.clockEl = root.querySelector("[data-clock]") as HTMLSpanElement;
     this.gpsEl = root.querySelector("[data-gps]") as HTMLDivElement;
+    this.destinationEl = root.querySelector("[data-destination]") as HTMLDivElement;
     this.questEl = root.querySelector(".hud__quest") as HTMLDivElement;
     this.questTitleEl = root.querySelector("[data-quest-title]") as HTMLElement;
     this.questObjectiveEl = root.querySelector("[data-quest-objective]") as HTMLElement;
     this.questProgressEl = root.querySelector("[data-quest-progress]") as HTMLElement;
+  }
+
+  /** Navigation destination line, e.g. "Agrabad · 320 m". Null hides it. */
+  setDestination(text: string | null): void {
+    if (!text) {
+      if (!this.destinationEl.hidden) this.destinationEl.hidden = true;
+      return;
+    }
+    if (this.destinationEl.textContent !== text) this.destinationEl.textContent = `➤ ${text}`;
+    if (this.destinationEl.hidden) this.destinationEl.hidden = false;
   }
 
   /** Quest tracker (spec §75). `objective` null means the quest is complete. */

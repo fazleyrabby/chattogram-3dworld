@@ -156,6 +156,12 @@ Generator scripts (see `package.json`): `world:dem`, `world:roads`.
 
 ## Audio
 
+- **Ambience recording** — "Sounds of Traffic and Sellers" by **Ready Street**,
+  via Wikimedia Commons, licensed **CC BY-SA 4.0**.
+  Source: https://commons.wikimedia.org/wiki/File:Sounds_of_Traffic_and_Sellers.ogg
+  Trimmed to a 90 s mono Opus loop at `public/audio/ambience-street.ogg`
+  (`ffmpeg -ss 5 -t 90 -ac 1 -ar 48000 -c:a libopus -b:a 64k`). Attribution
+  required (CC BY-SA 4.0).
 - Footsteps — synthesized in `src/audio/AudioManager.ts` (filtered noise + envelope).
 - Planned layers (spec §57): city ambience, birds, traffic, environmental loops.
 - Candidate free sources (verify license): Freesound (CC0/CC-BY), Mixkit,

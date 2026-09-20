@@ -13,7 +13,7 @@ export class SceneManager {
   constructor() {
     this.scene = new THREE.Scene();
     this.scene.background = this.sky;
-    this.scene.fog = new THREE.Fog(SKY_COLOR, 1200, 22000);
+    this.scene.fog = new THREE.Fog(SKY_COLOR, 300, 3600);
   }
 
   /** Retints the sky and fog (day/night, spec §34). */

@@ -9,6 +9,11 @@
   box-sizing: border-box;
 }
 
+/* The hidden attribute must beat layout display values (e.g. .notebook flex). */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body,
 #app {
@@ -96,6 +101,106 @@ body,
   font-size: 13px;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+.hud__destination {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(11, 59, 77, 0.85);
+  border: 1px solid rgba(57, 210, 255, 0.5);
+  color: #bdefff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.search {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+  max-width: calc(100vw - 48px);
+  padding: 10px;
+  background: rgba(14, 19, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  color: #eef3f8;
+  z-index: 7;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.search__input {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef3f8;
+  font: inherit;
+  outline: none;
+}
+
+.search__input:focus {
+  border-color: rgba(57, 210, 255, 0.6);
+}
+
+.search__results {
+  margin-top: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.search__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 3px 0;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef3f8;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search__item:hover {
+  background: rgba(57, 210, 255, 0.28);
+}
+
+.search__kind {
+  font-size: 10px;
+  opacity: 0.6;
+  text-transform: capitalize;
+}
+
+.search__hint {
+  padding: 8px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.search__clear {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef3f8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.search__clear:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .hud__quest {

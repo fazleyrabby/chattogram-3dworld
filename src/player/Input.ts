@@ -5,6 +5,14 @@
  * game objects directly. Continuous pointer movement is accumulated per frame
  * and consumed via consumePointerDelta()/consumeWheelDelta().
  */
+function isEditable(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  );
+}
+
 export class Input {
   private readonly keys = new Set<string>();
   private readonly justPressed = new Set<string>();
@@ -41,6 +49,7 @@ export class Input {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    if (isEditable(e.target)) return;
     if (e.code === "Space" || e.code.startsWith("Arrow")) {
       e.preventDefault();
     }
@@ -49,6 +58,7 @@ export class Input {
   };
 
   private onKeyUp = (e: KeyboardEvent): void => {
+    if (isEditable(e.target)) return;
     this.keys.delete(e.code);
   };
 

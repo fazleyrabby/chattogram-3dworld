@@ -45,6 +45,8 @@ export class Minimap {
   private large = false;
   private gps: { x: number; z: number } | null = null;
   private questTarget: { x: number; z: number } | null = null;
+  private route: Array<[number, number]> = [];
+  private destination: { x: number; z: number } | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -183,6 +185,12 @@ export class Minimap {
     this.questTarget = point;
   }
 
+  /** Draws the active navigation route and its destination. */
+  setRoute(points: Array<[number, number]>, destination: { x: number; z: number } | null): void {
+    this.route = points;
+    this.destination = destination;
+  }
+
   get isVisible(): boolean {
     return this.visible;
   }
@@ -215,6 +223,23 @@ export class Minimap {
 
     ctx.clearRect(0, 0, size, size);
     ctx.drawImage(this.staticMap, sx, sy, this.span, this.span, 0, 0, size, size);
+
+    // Navigation route.
+    if (this.route.length > 1) {
+      ctx.strokeStyle = "#39d2ff";
+      ctx.lineWidth = 3;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (let i = 0; i < this.route.length; i++) {
+        const [rx, ry] = this.toStatic(this.route[i]![0], this.route[i]![1]);
+        const dx = (rx - sx) * this.scale;
+        const dy = (ry - sy) * this.scale;
+        if (i === 0) ctx.moveTo(dx, dy);
+        else ctx.lineTo(dx, dy);
+      }
+      ctx.stroke();
+    }
 
     // Pins + labels.
     this.pins.length = 0;
@@ -275,6 +300,25 @@ export class Minimap {
         ctx.beginPath();
         ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
         ctx.fill();
+      }
+    }
+
+    // Navigation destination.
+    if (this.destination) {
+      const [dx0, dy0] = this.toStatic(this.destination.x, this.destination.z);
+      const dx = (dx0 - sx) * this.scale;
+      const dy = (dy0 - sy) * this.scale;
+      if (dx >= 0 && dy >= 0 && dx <= size && dy <= size) {
+        ctx.fillStyle = "#39d2ff";
+        ctx.strokeStyle = "#0b3b4d";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(dx, dy - 8);
+        ctx.lineTo(dx + 6, dy + 5);
+        ctx.lineTo(dx - 6, dy + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
       }
     }
 

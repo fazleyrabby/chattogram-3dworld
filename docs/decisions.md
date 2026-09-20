@@ -127,26 +127,34 @@ on real Chattogram data," never "exact replica."
 
 ---
 
-## ADR-0007 — Scope is Chittagong city, not the district
+## ADR-0007 — Scope is a compact district (revised)
 
-**Status:** Accepted
+**Status:** Accepted (revised)
 
 **Decision**
 
-Limit world data to **Chittagong city** (bounds `22.24–22.42 N, 91.74–91.90 E`),
-not the wider district/region. Origin recentered to the bbox center
-(`22.33, 91.82`); spawn remains Cheragi Pahar (`22.3437, 91.8336`).
+The world is a **compact district** around Cheragi Pahar — bounds
+`22.333–22.355 N, 91.823–91.845 E` (~2.3 × 2.4 km), origin at the centre
+(`22.344, 91.834`), spawn unchanged (`22.3437, 91.8336`). Terrain, roads and
+buildings are all generated for exactly these bounds.
 
-**Rationale**
+**Rationale (revised)**
 
-The whole district is ~1000 km² with on the order of hundreds of thousands of
-buildings; it is neither viable nor in scope for now. A ~16×20 km city slice at
-30 m is 549×668 and 1.5 MB.
+Original decision was "Chittagong city, not the district" (~16 × 20 km). Walking
+a world that large is tedious and it had no extra value for the MVP — the
+"little city" framing (Jalan KL) wanted a small, dense, roam-able space. The
+district contains the whole buildings dataset plus a green margin; the player is
+kept inside it (ADR-0018).
+
+**Important**
+
+When the origin/bounds change, **all** generators must be re-run together
+(`world:dem`, `world:roads`, `world:buildings`) — they each project with
+`WORLD_CONFIG.origin`, so a mismatch offsets the layers (this bit us once).
 
 **Alternatives considered**
 
-- Whole-district bbox — rejected: heavy preprocessing, storage, and streaming
-  cost with no MVP value.
+- Whole-district / whole-city bbox — rejected: unwieldy to roam, heavy data.
 
 ---
 
@@ -182,6 +190,45 @@ stylized (not photoreal) target.
 - Fully rigged armature + baked animation clips — unnecessary for M2/M3; revisit
   if richer animation is needed.
 - Third-party rigged avatar (Mixamo) — deferred.
+
+---
+
+## ADR-0018 — Invisible walls (clamp to district)
+
+**Status:** Accepted
+
+**Decision**
+
+Player movement, driving and map teleports are clamped to the district bounds
+with an inset margin (`clampToWorld`, margin ~120 m for the player, 110 m for
+vehicles). Beyond the terrain there is nothing to stand on.
+
+**Rationale**
+
+With a small world it is trivial to walk off the edge into the void (a black/
+grey gap under the fog). Invisible walls keep play on real terrain. A soft edge
+skirt could be added later, but the clamp is the simplest correct fix.
+
+---
+
+## ADR-0019 — Search + road routing
+
+**Status:** Accepted
+
+**Decision**
+
+A search box (slash key) over landmark names and named roads; selecting a result
+sets a destination. `RoadGraph` builds a routable graph from the major-road
+polylines (vertices merged by 1 m rounding) and `RoadGraph.route` runs Dijkstra
+from the player's nearest node to the destination's. `Navigation` renders the
+path as a glowing draped ribbon, a flag marker, a HUD distance, and a route
+polyline on the minimap. No path (disconnected crossing) falls back to a
+straight line.
+
+**Rationale**
+
+Real route guidance without a full routing engine. Reuses existing road data.
+Crossings that share no OSM node remain disconnected — acceptable at this scale.
 
 ---
 
@@ -396,6 +443,14 @@ A single bus keeps future layers — city ambience, birds, traffic, environmenta
 loops (spec §57) — consistent and easy to mix. Synthesized footsteps avoid asset
 licensing and load cost for the first audio pass; sample-based footsteps can be
 added later behind the same API.
+
+**Update (ambience is now a real recording).** The synthesized hum "sounded
+static", so ambience is a **real street recording** — "Sounds of Traffic and
+Sellers" (Ready Street, Wikimedia Commons, **CC BY-SA 4.0**) — trimmed to a 90 s
+mono loop (`public/audio/ambience-street.ogg`, ~694 KB) via ffmpeg, low-passed
+and kept **subtle** (gain ~0.09 day / 0.05 night). Synthesized ambience remains
+the fallback if decoding fails. Randomized synth horns/birds were removed (they
+sounded artificial). **U** mutes. Footsteps stay synthesized.
 
 **Alternatives considered**
 

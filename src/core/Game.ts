@@ -28,6 +28,9 @@ import { QuestBeacon } from "@/world/QuestBeacon";
 import { QuestManager } from "@/quests/QuestManager";
 import { CHEARGI_WALK } from "@/quests/quest";
 import { Notebook } from "@/ui/Notebook";
+import { RoadGraph } from "@/navigation/RoadGraph";
+import { Navigation } from "@/navigation/Navigation";
+import { buildSearchIndex, SearchBox } from "@/ui/SearchBox";
 import {
   clearLocationWatch,
   getCurrentLocation,
@@ -36,7 +39,7 @@ import {
   type DeviceLocation,
 } from "@/geography/Geolocation";
 import { WORLD_CONFIG } from "@/config/WorldConfig";
-import { geoToLocal } from "@/geography/Projection";
+import { clampToWorld, geoToLocal } from "@/geography/Projection";
 import { createHeightProvider, type HeightProvider } from "@/geography/WorldHeight";
 
 /**
@@ -67,6 +70,8 @@ export class Game {
   private quest?: QuestManager;
   private notebook?: Notebook;
   private beacon?: QuestBeacon;
+  private navigation?: Navigation;
+  private searchBox?: SearchBox;
   private landmarks?: LandmarkManager;
   private vehicles?: VehicleManager;
   private postfx: PostFX | undefined;
@@ -139,11 +144,17 @@ export class Game {
     const streetProps = new StreetProps(roads.roads, this.getHeight);
     this.pedestrians = new Pedestrians(roads.roads, this.getHeight);
     this.traffic = new Traffic(roads.roads, this.getHeight);
+    this.navigation = new Navigation(
+      new RoadGraph(roads.roads),
+      this.getHeight,
+      this.hud,
+    );
     this.sceneManager.scene.add(
       landmarkDetails.object,
       streetProps.object,
       this.pedestrians.object,
       this.traffic.object,
+      this.navigation.object,
     );
 
     // Quest + discovery (spec §75).
@@ -176,7 +187,14 @@ export class Game {
       (x, z) => this.travelTo(x, z),
     );
     this.vehicles = new VehicleManager(this.sceneManager.scene, this.getHeight);
+    this.searchBox = new SearchBox(
+      document.body,
+      buildSearchIndex(buildings.named, roads.roads),
+      (item) => this.navigation?.setDestination(item, this.player),
+      () => this.navigation?.clear(),
+    );
     await this.loadAvatar();
+    await this.audio.loadAmbience();
 
     this.sceneManager.scene.add(terrain.object, roads.object, buildings.object);
 
@@ -300,6 +318,11 @@ export class Game {
     this.cameraRig.update(delta, this.cameraTarget);
 
     this.landmarks?.update(this.player, this.input);
+    this.navigation?.update(delta, this.player);
+    this.minimap?.setRoute(
+      this.navigation?.getRoute() ?? [],
+      this.navigation?.getTarget() ?? null,
+    );
     this.quest?.update();
     this.beacon?.update(delta);
     const objective = this.quest?.currentLandmark() ?? null;
@@ -340,9 +363,15 @@ export class Game {
     if (this.input.wasPressed("KeyM")) this.minimap?.toggle();
     if (this.input.wasPressed("KeyN")) this.minimap?.toggleLarge();
     if (this.input.wasPressed("KeyH")) this.notebook?.toggle();
+    if (this.input.wasPressed("Slash")) this.searchBox?.toggle();
+    if (this.input.wasPressed("Escape")) {
+      this.searchBox?.close();
+      this.notebook?.close();
+    }
     if (this.input.wasPressed("KeyL")) void this.startAtDeviceLocation();
     if (this.input.wasPressed("KeyG")) this.toggleGpsTracking();
     if (this.input.wasPressed("KeyP")) this.postfx?.toggle();
+    if (this.input.wasPressed("KeyU")) this.audio.toggleMute();
     if (this.input.wasPressed("KeyF")) {
       vehicles.toggleMount(this.player);
       const mounted = vehicles.mounted;
@@ -359,7 +388,8 @@ export class Game {
   /** Teleports the player to a world position (map click / pin). */
   private travelTo(x: number, z: number): void {
     if (this.vehicles?.mounted) this.vehicles.toggleMount(this.player);
-    this.player.position.set(x, this.getHeight(x, z), z);
+    const [cx, cz] = clampToWorld(x, z, 120);
+    this.player.position.set(cx, this.getHeight(cx, cz), cz);
     this.player.velocity.set(0, 0, 0);
     this.player.sync();
     this.cameraRig.snap();
