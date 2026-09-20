@@ -7,6 +7,8 @@ import * as THREE from "three";
 export class Lighting {
   readonly object: THREE.Group;
   readonly sun: THREE.DirectionalLight;
+  /** World size of one shadow-map texel; used to snap the sun and avoid shimmer. */
+  readonly shadowTexel: number;
 
   constructor(sceneSize = 6000) {
     this.object = new THREE.Group();
@@ -20,8 +22,10 @@ export class Lighting {
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 10;
-    sun.shadow.camera.far = 5000;
-    sun.shadow.bias = -0.0005;
+    sun.shadow.camera.far = 6000;
+    // normalBias removes shadow acne on large, low-resolution shadow maps.
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 1.5;
 
     const extent = Math.min(sceneSize / 4, 1200);
     const cam = sun.shadow.camera as THREE.OrthographicCamera;
@@ -30,6 +34,8 @@ export class Lighting {
     cam.top = extent;
     cam.bottom = -extent;
     cam.updateProjectionMatrix();
+
+    this.shadowTexel = (2 * extent) / sun.shadow.mapSize.x;
 
     this.sun = sun;
     this.object.add(sun);

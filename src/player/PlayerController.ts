@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Input } from "@/player/Input";
 import type { Player } from "@/player/Player";
 import type { ThirdPersonCamera } from "@/camera/ThirdPersonCamera";
-import { surfaceHeight } from "@/geography/Curvature";
+import type { HeightProvider } from "@/geography/WorldHeight";
 
 const WALK_SPEED = 4.5;
 const RUN_SPEED = 9;
@@ -28,6 +28,7 @@ export class PlayerController {
     private readonly player: Player,
     private readonly input: Input,
     private readonly camera: ThirdPersonCamera,
+    private readonly getHeight: HeightProvider,
   ) {}
 
   update(delta: number): void {
@@ -37,6 +38,7 @@ export class PlayerController {
     this.resolveGround();
     this.applyFacing(delta);
     this.player.sync();
+    this.player.update(delta);
   }
 
   private applyMovement(delta: number): void {
@@ -74,7 +76,7 @@ export class PlayerController {
   }
 
   private resolveGround(): void {
-    const groundY = surfaceHeight(this.player.position.x, this.player.position.z);
+    const groundY = this.getHeight(this.player.position.x, this.player.position.z);
 
     if (this.player.position.y <= groundY + GROUND_EPSILON) {
       this.player.position.y = groundY;

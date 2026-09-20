@@ -5,8 +5,8 @@
 | # | Milestone | Status | Doc |
 | --- | --- | --- | --- |
 | 1 | Empty 3D world (renderer, curved surface, player, camera) | done | [m1](milestones/m1-empty-world.md) |
-| 2 | Real Chattogram terrain (projection, DEM, coast, water) | planned | — |
-| 3 | Real roads (OSM import, intersections, bridges) | planned | — |
+| 2 | Real Chattogram terrain (projection, DEM, coast, water) | mostly (water deferred) | [m2](milestones/m2-terrain.md) |
+| 3 | Real roads (OSM import, intersections, bridges) | done (major roads) | [m3](milestones/m3-roads.md) |
 | 4 | Buildings (footprints, heights, types, LOD) | planned | — |
 | 5 | Landmarks (10–20, labels, panel, interaction) | planned | — |
 | 6 | World streaming (chunks, LOD, instancing) | planned | — |
@@ -22,6 +22,11 @@
 | Verified data sources | done |
 | Project scaffold (Vite + TS strict + Three) | done |
 | Git repo initialized + remote set | done |
+| DEM pipeline (Copernicus GLO-30) | done |
+| Roads pipeline (OSM major roads) | done |
+| Avatar authored in Blender (GLB) | done |
+| Water / coastline (OSM polygons) | pending |
+| Buildings (OSM footprints + LOD) | pending |
 
 ## Legend
 

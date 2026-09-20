@@ -32,21 +32,25 @@ export interface WorldConfig {
   };
   /** Chunk size in meters (see spec §21). */
   chunkSize: number;
+  /** Sea level in meters, added to the curved surface. */
+  seaLevel: number;
 }
 
 export const WORLD_CONFIG: WorldConfig = {
   city: "Chattogram",
   country: "Bangladesh",
-  // Corridor: New Bridge -> central -> port/Karnaphuli -> Patenga (spec §3).
+  // Chittagong CITY only (spec §3) — not the wider district/region. Covers the
+  // urban area across the Karnaphuli down toward Patenga. Scope decision:
+  // ADR-0007.
   bounds: {
-    north: 22.45,
-    south: 22.15,
-    east: 91.95,
-    west: 91.65,
+    north: 22.42,
+    south: 22.24,
+    east: 91.9,
+    west: 91.74,
   },
   origin: {
-    latitude: 22.3437,
-    longitude: 91.8336,
+    latitude: 22.33,
+    longitude: 91.82,
   },
   spawn: {
     latitude: 22.3437,
@@ -54,7 +58,10 @@ export const WORLD_CONFIG: WorldConfig = {
   },
   curvature: {
     mode: "spherical",
-    radius: 50000,
+    // Gentle bend over a ~30 km world. Real DEM elevation is the primary relief;
+    // curvature only adds a subtle curved horizon (ADR-0003).
+    radius: 3_000_000,
   },
   chunkSize: 500,
+  seaLevel: 0,
 };

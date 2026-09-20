@@ -1,14 +1,19 @@
 import * as THREE from "three";
+import { PlayerModel } from "@/player/PlayerModel";
+import type { PlayerAvatar } from "@/player/PlayerAvatar";
 
 export const PLAYER_HALF_HEIGHT = 0.9;
 export const PLAYER_RADIUS = 0.35;
 
+const CAMERA_TARGET_HEIGHT = 1.15;
+const WALK_PHASE_RATE = 2.2;
+const RUN_SPEED_REFERENCE = 9;
+
 /**
  * Player avatar and kinematic state (spec §24, §29).
  *
- * Milestone 1 uses a simple capsule avatar. A rigged/animated GLB replaces the
- * mesh here in a later milestone, without changing the controller contract.
- * `position` is the feet position; `object` is the renderable group at that point.
+ * `position` is the feet position; `object` is the renderable root. Animation is
+ * driven from horizontal speed so it stays in sync with the controller.
  */
 export class Player {
   readonly object: THREE.Group;
@@ -18,30 +23,22 @@ export class Player {
   onGround = true;
   facing = 0;
 
+  private avatar: PlayerAvatar;
+  private walkPhase = 0;
+
   constructor() {
     this.position = new THREE.Vector3();
-
     this.object = new THREE.Group();
     this.object.name = "Player";
+    this.avatar = new PlayerModel();
+    this.object.add(this.avatar.object);
+  }
 
-    const capsuleLength = PLAYER_HALF_HEIGHT * 2 - PLAYER_RADIUS * 2;
-    const body = new THREE.Mesh(
-      new THREE.CapsuleGeometry(PLAYER_RADIUS, capsuleLength, 8, 20),
-      new THREE.MeshStandardMaterial({ color: 0x2f80ed, roughness: 0.55 }),
-    );
-    body.position.y = PLAYER_HALF_HEIGHT;
-    body.castShadow = true;
-    body.name = "Body";
-    this.object.add(body);
-
-    const nose = new THREE.Mesh(
-      new THREE.BoxGeometry(0.16, 0.16, 0.28),
-      new THREE.MeshStandardMaterial({ color: 0xf2c14e, roughness: 0.5 }),
-    );
-    nose.position.set(0, PLAYER_HALF_HEIGHT, PLAYER_RADIUS + 0.14);
-    nose.castShadow = true;
-    nose.name = "Facing";
-    this.object.add(nose);
+  /** Swaps the avatar (e.g. procedural -> Blender GLB) without a controller change. */
+  setAvatar(avatar: PlayerAvatar): void {
+    this.object.remove(this.avatar.object);
+    this.avatar = avatar;
+    this.object.add(avatar.object);
   }
 
   /** Copies simulation state onto the renderable group. */
@@ -50,11 +47,30 @@ export class Player {
     this.object.rotation.y = this.facing;
   }
 
-  /** Eye/torso target used by the camera. */
+  /**
+   * Advances the avatar animation. The avatar stays completely static at rest
+   * and only animates in response to player input (movement or falling).
+   */
+  update(delta: number): void {
+    const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    const intensity = Math.min(speed / RUN_SPEED_REFERENCE, 1);
+    const moving = speed > 0.2;
+    const airborne = !this.onGround;
+
+    if (moving) {
+      this.walkPhase += delta * WALK_PHASE_RATE * speed;
+      this.avatar.animate(this.walkPhase, intensity, airborne);
+    } else {
+      this.walkPhase = 0;
+      this.avatar.animate(0, 0, airborne);
+    }
+  }
+
+  /** Camera follow target (chest height). */
   getCameraTarget(out: THREE.Vector3): THREE.Vector3 {
     return out.set(
       this.position.x,
-      this.position.y + PLAYER_HALF_HEIGHT,
+      this.position.y + CAMERA_TARGET_HEIGHT,
       this.position.z,
     );
   }

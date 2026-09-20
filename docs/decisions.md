@@ -124,3 +124,61 @@ enrichment, a discovery log, and a persistent accuracy/attribution disclaimer.
 
 The project doubles as an educational tool; framing stays "geographically based
 on real Chattogram data," never "exact replica."
+
+---
+
+## ADR-0007 — Scope is Chittagong city, not the district
+
+**Status:** Accepted
+
+**Decision**
+
+Limit world data to **Chittagong city** (bounds `22.24–22.42 N, 91.74–91.90 E`),
+not the wider district/region. Origin recentered to the bbox center
+(`22.33, 91.82`); spawn remains Cheragi Pahar (`22.3437, 91.8336`).
+
+**Rationale**
+
+The whole district is ~1000 km² with on the order of hundreds of thousands of
+buildings; it is neither viable nor in scope for now. A ~16×20 km city slice at
+30 m is 549×668 and 1.5 MB.
+
+**Alternatives considered**
+
+- Whole-district bbox — rejected: heavy preprocessing, storage, and streaming
+  cost with no MVP value.
+
+---
+
+## ADR-0008 — Avatar: Blender GLB with procedural fallback
+
+**Status:** Accepted
+
+**Decision**
+
+Author the player avatar in Blender (`scripts/blender/build_character.py`) and
+export `public/models/character.glb`. The GLB exposes named joint nodes
+(`JointTorso`, `JointHead`, `JointArmL/R`, `JointLegL/R`); `GltfAvatar` animates
+those nodes. `PlayerModel` remains a procedural fallback if the GLB fails to
+load, behind the shared `PlayerAvatar` interface. The avatar is **static at
+rest** and animates only in response to input.
+
+**Rationale**
+
+Better-looking hero asset without adding a runtime dependency, and the joint-node
+approach keeps animation identical between both avatars. Matches the spec's
+stylized (not photoreal) target.
+
+**Notes**
+
+- Blender is Z-up; the exporter converts to Y-up. The model faces -Y in Blender
+  (= +Z in-game).
+- Do **not** overwrite joint `position` from JS — offset bobs from the joint's
+  base value (a bug where `JointTorso.y` (0.92) was overwritten and collapsed the
+  body).
+
+**Alternatives considered**
+
+- Fully rigged armature + baked animation clips — unnecessary for M2/M3; revisit
+  if richer animation is needed.
+- Third-party rigged avatar (Mixamo) — deferred.
