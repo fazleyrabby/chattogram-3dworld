@@ -185,6 +185,37 @@ stylized (not photoreal) target.
 
 ---
 
+## ADR-0010 — Summonable vehicles (stretch feature)
+
+**Status:** Accepted
+
+**Decision**
+
+Add a simple **car** and **bicycle**, summoned instantly with **C** / **B** and
+ridden with **F** (mount/dismount). Procedural meshes, arcade model:
+W/S accelerate/brake-reverse, A/D steer (steering scales with speed). While
+riding, the camera trails the vehicle heading so W reads as forward, and the
+avatar stays visible (`VehicleManager.syncRider`). `VehicleManager` owns
+summon/mount/drive; `Vehicle` owns the mesh + physics.
+
+**Rationale**
+
+Spec lists vehicles as an explicit MVP non-goal (§74) and a stretch/future
+feature (§42, §75); this is an optional gameplay layer on top of the core
+exploration, isolated from the player controller.
+
+**Notes**
+
+- First pass reversed the controls (forward was relative to the vehicle's stale
+  facing) and hid the avatar; both fixed. Heading on mount = camera yaw + π.
+- The rider has no seated pose yet, so it overlaps the vehicle — polish later.
+
+**Alternatives considered**
+
+- Blender-authored vehicle GLBs — deferred; procedural is enough to prove it.
+
+---
+
 ## ADR-0009 — Audio via a single WebAudio bus
 
 **Status:** Accepted

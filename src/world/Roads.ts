@@ -8,7 +8,7 @@ const SURFACE_OFFSET = 0.05;
 const CENTER_LINE_WIDTH = 0.5;
 const CENTER_LINE_TYPES = new Set(["motorway", "trunk", "primary", "secondary"]);
 
-interface RoadData {
+export interface RoadData {
   id: string;
   type: string;
   name?: string;
@@ -32,9 +32,11 @@ type Point = [number, number];
  */
 export class Roads {
   readonly object: THREE.Group;
+  readonly roads: RoadData[];
 
-  private constructor(object: THREE.Group) {
+  private constructor(object: THREE.Group, roads: RoadData[]) {
     this.object = object;
+    this.roads = roads;
   }
 
   static async load(getHeight: HeightProvider): Promise<Roads> {
@@ -69,7 +71,7 @@ export class Roads {
     markingMesh.name = "RoadMarkings";
     group.add(markingMesh);
 
-    return new Roads(group);
+    return new Roads(group, data.roads);
   }
 }
 

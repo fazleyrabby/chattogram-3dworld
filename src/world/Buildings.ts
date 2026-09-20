@@ -26,7 +26,7 @@ export interface NamedBuilding {
   height: number;
 }
 
-interface BuildingData {
+export interface BuildingData {
   id: string;
   type: string;
   name?: string;
@@ -50,10 +50,12 @@ type Vec3 = [number, number, number];
 export class Buildings {
   readonly object: THREE.Mesh;
   readonly named: NamedBuilding[];
+  readonly list: BuildingData[];
 
-  private constructor(object: THREE.Mesh, named: NamedBuilding[]) {
+  private constructor(object: THREE.Mesh, named: NamedBuilding[], list: BuildingData[]) {
     this.object = object;
     this.named = named;
+    this.list = list;
   }
 
   static async load(getHeight: HeightProvider): Promise<Buildings> {
@@ -135,7 +137,7 @@ export class Buildings {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
-    return new Buildings(mesh, named);
+    return new Buildings(mesh, named, data.buildings);
   }
 }
 

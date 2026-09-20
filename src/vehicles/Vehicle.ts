@@ -1,0 +1,204 @@
+import * as THREE from "three";
+import type { HeightProvider } from "@/geography/WorldHeight";
+
+export type VehicleKind = "car" | "bicycle";
+
+const BODY = 0x2f6fb0;
+const BODY_DARK = 0x24405c;
+const GLASS = 0x9fc6e0;
+const TYRE = 0x1b1b1f;
+const RIM = 0xc9ccd2;
+const FRAME = 0xb0382f;
+const LIGHT = 0xffe9a8;
+
+interface VehicleSpec {
+  maxSpeed: number;
+  reverseSpeed: number;
+  acceleration: number;
+  braking: number;
+  drag: number;
+  turnRate: number;
+  camDistance: number;
+}
+
+const SPECS: Record<VehicleKind, VehicleSpec> = {
+  car: { maxSpeed: 22, reverseSpeed: 7, acceleration: 12, braking: 22, drag: 1.2, turnRate: 1.7, camDistance: 12 },
+  bicycle: { maxSpeed: 9, reverseSpeed: 2.5, acceleration: 6, braking: 10, drag: 1.0, turnRate: 2.6, camDistance: 7 },
+};
+
+/**
+ * A simple summonable, rideable vehicle (spec §42 stretch feature).
+ *
+ * Arcade model: W/S accelerate/brake, A/D steer (steering scales with speed).
+ * The mesh sits on the terrain and wheels spin with speed.
+ */
+export class Vehicle {
+  readonly kind: VehicleKind;
+  readonly object: THREE.Group;
+  readonly spec: VehicleSpec;
+
+  heading = 0;
+  speed = 0;
+
+  private readonly wheels: THREE.Group[] = [];
+  private position = new THREE.Vector3();
+
+  constructor(kind: VehicleKind) {
+    this.kind = kind;
+    this.spec = SPECS[kind];
+    this.object = kind === "car" ? buildCar() : buildBicycle();
+    this.object.name = `Vehicle:${kind}`;
+    this.object.visible = false;
+
+    this.object.traverse((child) => {
+      if (child.userData.wheel === true) this.wheels.push(child as THREE.Group);
+    });
+  }
+
+  get isVisible(): boolean {
+    return this.object.visible;
+  }
+
+  /** Places the vehicle on the ground just in front of a point. */
+  place(x: number, z: number, heading: number, getHeight: HeightProvider): void {
+    this.heading = heading;
+    this.speed = 0;
+    this.position.set(x, getHeight(x, z), z);
+    this.object.visible = true;
+    this.sync();
+  }
+
+  update(delta: number, throttle: number, steer: number, getHeight: HeightProvider): void {
+    const spec = this.spec;
+
+    if (throttle > 0) {
+      this.speed += spec.acceleration * throttle * delta;
+    } else if (throttle < 0) {
+      // Brake first, then reverse.
+      this.speed += (this.speed > 0 ? -spec.braking : spec.acceleration * 0.6) * throttle * delta;
+    } else {
+      this.speed -= Math.sign(this.speed) * spec.drag * delta * 4;
+      if (Math.abs(this.speed) < 0.05) this.speed = 0;
+    }
+    this.speed = THREE.MathUtils.clamp(this.speed, -spec.reverseSpeed, spec.maxSpeed);
+
+    // Steering only bites while moving.
+    const speedFactor = THREE.MathUtils.clamp(Math.abs(this.speed) / 4, 0, 1);
+    this.heading -= steer * spec.turnRate * speedFactor * delta * Math.sign(this.speed || 1);
+
+    const dx = Math.sin(this.heading) * this.speed * delta;
+    const dz = Math.cos(this.heading) * this.speed * delta;
+    const nextX = this.position.x + dx;
+    const nextZ = this.position.z + dz;
+    this.position.set(nextX, getHeight(nextX, nextZ), nextZ);
+
+    const wheelSpin = (this.speed / 0.33) * delta;
+    for (const wheel of this.wheels) wheel.rotation.x -= wheelSpin;
+
+    this.sync();
+  }
+
+  getPosition(out: THREE.Vector3): THREE.Vector3 {
+    return out.copy(this.position);
+  }
+
+  private sync(): void {
+    this.object.position.copy(this.position);
+    this.object.rotation.y = this.heading;
+  }
+}
+
+function buildCar(): THREE.Group {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: BODY, roughness: 0.45, metalness: 0.15 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: BODY_DARK, roughness: 0.6 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: GLASS, roughness: 0.2, metalness: 0.1 });
+  const tyreMat = new THREE.MeshStandardMaterial({ color: TYRE, roughness: 0.85 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: RIM, roughness: 0.4, metalness: 0.4 });
+  const lightMat = new THREE.MeshStandardMaterial({ color: LIGHT, emissive: LIGHT, emissiveIntensity: 0.6 });
+
+  const lower = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 4.2), bodyMat);
+  lower.position.y = 0.62;
+  const upper = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 2.2), glassMat);
+  upper.position.set(0, 1.05, -0.15);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.12, 2.2), bodyMat);
+  roof.position.set(0, 1.36, -0.15);
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(1.82, 0.2, 0.3), darkMat);
+  bumper.position.set(0, 0.5, 2.1);
+
+  for (const mesh of [lower, upper, roof, bumper]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  }
+
+  for (const side of [1, -1]) {
+    const headlight = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.1), lightMat);
+    headlight.position.set(side * 0.6, 0.72, 2.08);
+    group.add(headlight);
+  }
+
+  const wheelGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.24, 16);
+  const rimGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.26, 12);
+  for (const sx of [1, -1]) {
+    for (const sz of [1, -1]) {
+      const wheel = new THREE.Group();
+      wheel.position.set(sx * 0.88, 0.34, sz * 1.35);
+      const tyre = new THREE.Mesh(wheelGeo, tyreMat);
+      tyre.rotation.z = Math.PI / 2;
+      tyre.castShadow = true;
+      const rim = new THREE.Mesh(rimGeo, rimMat);
+      rim.rotation.z = Math.PI / 2;
+      wheel.add(tyre, rim);
+      wheel.userData.wheel = true;
+      group.add(wheel);
+    }
+  }
+
+  return group;
+}
+
+function buildBicycle(): THREE.Group {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: FRAME, roughness: 0.5, metalness: 0.3 });
+  const tyreMat = new THREE.MeshStandardMaterial({ color: TYRE, roughness: 0.85 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: RIM, roughness: 0.4, metalness: 0.4 });
+  const seatMat = new THREE.MeshStandardMaterial({ color: 0x22242a, roughness: 0.7 });
+
+  const wheelGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.06, 20);
+  const rimGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.04, 20);
+  for (const sz of [1, -1]) {
+    const wheel = new THREE.Group();
+    wheel.position.set(0, 0.34, sz * 0.55);
+    const tyre = new THREE.Mesh(wheelGeo, tyreMat);
+    tyre.rotation.z = Math.PI / 2;
+    tyre.castShadow = true;
+    const rim = new THREE.Mesh(rimGeo, rimMat);
+    rim.rotation.z = Math.PI / 2;
+    wheel.add(tyre, rim);
+    wheel.userData.wheel = true;
+    group.add(wheel);
+  }
+
+  const bar = (x: number, y: number, z: number, len: number, axis: "x" | "y" | "z") => {
+    const geo = new THREE.BoxGeometry(axis === "x" ? len : 0.05, axis === "y" ? len : 0.05, axis === "z" ? len : 0.05);
+    const mesh = new THREE.Mesh(geo, frameMat);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    group.add(mesh);
+  };
+
+  // Simple frame: top tube, down tube, seat tube, fork.
+  bar(0, 0.72, 0.0, 0.72, "z");
+  bar(0, 0.55, 0.05, 0.55, "y");
+  bar(0, 0.78, -0.5, 0.06, "y");
+  bar(0, 0.62, 0.42, 0.36, "y");
+  bar(0, 0.98, -0.5, 0.32, "x");
+
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.34), seatMat);
+  seat.position.set(0, 0.84, -0.48);
+  seat.castShadow = true;
+  group.add(seat);
+
+  return group;
+}

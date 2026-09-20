@@ -7,6 +7,7 @@
  */
 export class Input {
   private readonly keys = new Set<string>();
+  private readonly justPressed = new Set<string>();
   private readonly listeners: Array<() => void> = [];
 
   private dragging = false;
@@ -43,6 +44,7 @@ export class Input {
     if (e.code === "Space" || e.code.startsWith("Arrow")) {
       e.preventDefault();
     }
+    if (!this.keys.has(e.code)) this.justPressed.add(e.code);
     this.keys.add(e.code);
   };
 
@@ -84,6 +86,16 @@ export class Input {
 
   isDown(code: string): boolean {
     return this.keys.has(code);
+  }
+
+  /** True only on the frame the key went down. Cleared by endFrame(). */
+  wasPressed(code: string): boolean {
+    return this.justPressed.has(code);
+  }
+
+  /** Call once per frame after reading input. */
+  endFrame(): void {
+    this.justPressed.clear();
   }
 
   get moveForward(): number {

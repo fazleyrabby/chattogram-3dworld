@@ -19,7 +19,8 @@ export class HUD {
         <span data-coord>--</span>
       </div>
       <div class="hud__controls">
-        WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump
+        WASD Move &middot; Mouse Drag Camera &middot; Wheel Zoom &middot; Shift Sprint &middot; Space Jump<br />
+        C Car &middot; B Bicycle &middot; F Ride / Dismount &middot; M Minimap
       </div>
     `;
 

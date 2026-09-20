@@ -28,6 +28,8 @@
 | Water / coastline (OSM polygons) | pending |
 | Buildings (OSM footprints + LOD) | spawn district done; city-wide pending |
 | Named-building world labels | done |
+| Minimap (§55, Canvas2D, names) | done |
+| Vehicles (summon car/bicycle, ride) | done |
 | Footstep audio (synthesized) | done |
 | Ambient audio (city/birds/traffic) | pending |
 
